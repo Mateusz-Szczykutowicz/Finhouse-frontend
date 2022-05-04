@@ -1,0 +1,19 @@
+.wrapper {
+    position: absolute;
+    top: 174px;
+    left: 136px;
+    width: 250px;
+    height: 100px;
+
+    .imageWrapper {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 134px;
+        height: 51px;
+    }
+}

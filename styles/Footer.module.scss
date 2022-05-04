@@ -1,0 +1,15 @@
+.footer {
+    width: 100vw;
+    padding: 20px;
+    text-align: center;
+    margin-top: 30px;
+    h3 {
+        font-size: 12px;
+        a {
+            transition: 0.3s;
+        }
+        a:hover {
+            color: rgb(112, 0, 0);
+        }
+    }
+}
