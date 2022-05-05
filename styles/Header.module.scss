@@ -1,11 +1,12 @@
 .wrapper {
-    position: absolute;
-    top: 174px;
-    left: 136px;
-    width: 250px;
+    position: relative;
+    margin-top: 100px;
+    padding-left: 135px;
+    width: 100vw;
     height: 100px;
 
     .imageWrapper {
+        z-index: 10;
         background-color: transparent;
         border: none;
         cursor: pointer;
