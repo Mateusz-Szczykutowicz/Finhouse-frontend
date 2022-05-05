@@ -40,52 +40,57 @@ const Login: NextPage = () => {
             <Head>
                 <title>Login | FinHouse</title>
             </Head>
-            <header>
+
+            <div className={styles.wrapper}>
                 <Header />
-            </header>
-            <main className={styles.container}>
-                <div className={styles.imageWrapper}>
-                    <Image src="/images/login.svg" layout="fill" alt="Login" />
-                </div>
-                <form
-                    action="#"
-                    method="post"
-                    className={styles.form}
-                    onSubmit={handleSubmit}
-                >
-                    <input
-                        type="text"
-                        name="login"
-                        id="login"
-                        placeholder="Login"
-                        value={login}
-                        onChange={(e) => setLogin(e.target.value)}
-                    />
-                    <input
-                        type="password"
-                        name="password"
-                        id="password"
-                        placeholder="Hasło"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button type="submit" className={styles.loginButton}>
-                        Zaloguj
-                    </button>
-                    <button
-                        onClick={() => {
-                            router.push("/register");
-                        }}
-                        className={styles.registerButton}
+                <main className={styles.container}>
+                    <div className={styles.imageWrapper}>
+                        <Image
+                            src="/images/login.svg"
+                            layout="fill"
+                            alt="Login"
+                        />
+                    </div>
+                    <form
+                        action="#"
+                        method="post"
+                        className={styles.form}
+                        onSubmit={handleSubmit}
                     >
-                        Zarejestruj się
-                    </button>
-                </form>
-                <Link href="/recover">Odzyskaj hasło</Link>
-            </main>
-            <footer>
-                <Footer />
-            </footer>
+                        <input
+                            type="text"
+                            name="login"
+                            id="login"
+                            placeholder="Login"
+                            value={login}
+                            onChange={(e) => setLogin(e.target.value)}
+                        />
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            placeholder="Hasło"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <button type="submit" className={styles.loginButton}>
+                            Zaloguj
+                        </button>
+                        <button
+                            onClick={() => {
+                                router.push("/register");
+                            }}
+                            className={styles.registerButton}
+                        >
+                            Zarejestruj się
+                        </button>
+                    </form>
+                    <Link href="/recover">Odzyskaj hasło</Link>
+                </main>
+                <footer>
+                    <Footer />
+                </footer>
+            </div>
         </>
     );
 };

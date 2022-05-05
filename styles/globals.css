@@ -9,6 +9,7 @@
 html,
 body {
     width: 100vw;
+    overflow-x: hidden;
     position: relative;
     background-color: #f6f6f6;
     font-family: "Mulish", sans-serif;

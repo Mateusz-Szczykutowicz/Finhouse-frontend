@@ -1,59 +1,62 @@
-.container {
-    width: 100vw;
-    margin-top: -72px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    .imageWrapper {
-        position: relative;
-        z-index: 1;
-        width: 928px;
-        height: 738px;
-    }
-    .form {
-        z-index: 2;
-        margin-top: -220px;
+.wrapper {
+    position: relative;
+    .container {
+        width: 100vw;
+        margin-top: -271px;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         align-items: center;
-        input {
-            font-size: 16px;
-            margin-top: 21px;
-            padding: 22px 36px;
-            width: 631px;
-            height: 59px;
-            border: none;
-            border-radius: 27px;
-            box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
-            outline: none;
+        .imageWrapper {
+            position: relative;
+            z-index: 1;
+            width: 928px;
+            height: 738px;
         }
-        input:focus {
-            border: 1px solid #6e60df;
+        .form {
+            z-index: 2;
+            margin-top: -220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            input {
+                font-size: 16px;
+                margin-top: 21px;
+                padding: 22px 36px;
+                width: 631px;
+                height: 59px;
+                border: none;
+                border-radius: 27px;
+                box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                outline: none;
+            }
+            input:focus {
+                border: 1px solid #6e60df;
+            }
+            button {
+                width: 250px;
+                height: 59px;
+                border: none;
+                border-radius: 27px;
+                font-size: 20px;
+            }
+            .loginButton {
+                margin-top: 50px;
+                background-color: #6e60df;
+                color: #fff;
+            }
+            .registerButton {
+                margin-top: 31px;
+                background-color: #fff;
+                box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                color: #6e60df;
+            }
         }
-        button {
-            width: 250px;
-            height: 59px;
-            border: none;
-            border-radius: 27px;
-            font-size: 20px;
-        }
-        .loginButton {
-            margin-top: 50px;
-            background-color: #6e60df;
-            color: #fff;
-        }
-        .registerButton {
-            margin-top: 31px;
-            background-color: #fff;
-            box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+        a {
+            margin-top: 45px;
             color: #6e60df;
+            font-size: 20px;
+            font-weight: 700;
         }
-    }
-    a {
-        margin-top: 45px;
-        color: #6e60df;
-        font-size: 20px;
-        font-weight: 700;
     }
 }
