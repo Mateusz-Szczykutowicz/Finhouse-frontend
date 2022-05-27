@@ -1,0 +1,261 @@
+.wrapper {
+    margin-top: -50px;
+    .container {
+        margin-top: 50px;
+        position: relative;
+        display: flex;
+        padding: 0 100px;
+        .nav {
+            margin-top: 20px;
+            margin-right: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            align-self: flex-start;
+            // background-color: wheat;
+            .category {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                width: 66px;
+                height: 66px;
+                border: 1px solid #828282;
+                margin-bottom: 20px;
+                margin-top: 20px;
+                background-color: transparent;
+                cursor: pointer;
+                transition: 0.2s;
+                .imageWrapper {
+                    position: relative;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+            .category:hover {
+                // border: 1px solid #6e60df;
+                background-color: #eaebf7;
+            }
+            .active {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 66px;
+                height: 66px;
+                background-color: #6e60df;
+                border: none;
+                border-radius: 50%;
+                img {
+                    fill: #fff;
+                    border-color: #fff;
+                    border: none;
+                }
+            }
+            .active:hover {
+                background-color: #6e60df;
+            }
+        }
+        .investmentsWrapper {
+            h2 {
+                font-size: 40px;
+            }
+            .investmentsContainer {
+                margin-top: 26px;
+                width: 1000px;
+                background-color: #fff;
+                padding: 36px 48px;
+                border-radius: 27px;
+                .headerContainer {
+                    display: flex;
+                    justify-content: space-between;
+                    .leftWrapper {
+                        h3 {
+                            font-size: 20px;
+                            color: #333;
+                        }
+                        .date {
+                            margin-top: 12px;
+                            font-size: 12px;
+                            color: #828282;
+                            font-weight: 700;
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                        .paymentDelay {
+                            margin-top: 5px;
+                            font-size: 12px;
+                            font-weight: 700;
+
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                    }
+                    .rightWrapper {
+                        .email {
+                            font-size: 16px;
+                            font-weight: 700;
+                            a {
+                                margin-left: 5px;
+                            }
+                        }
+                        .tel {
+                            margin-top: 10px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            a {
+                                margin-left: 5px;
+                            }
+                        }
+                    }
+                }
+                .buttonContainer {
+                    margin-top: 50px;
+                    button {
+                        width: 200px;
+                        height: 50px;
+                        font-size: 14px;
+                        font-weight: 700;
+                        border: none;
+                        border-radius: 23px;
+                        background-color: #fff;
+                        box-shadow: (0px 4px 4px rgba(110, 96, 223, 0.75));
+                        margin-right: 24px;
+                        transition: 0.2s;
+                    }
+                    button:hover {
+                        cursor: pointer;
+                        background-color: #6e60df;
+                        color: #fff;
+                    }
+                }
+                .contentContainer {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 50px;
+                    font-size: 16px;
+                    font-weight: 700;
+                    .leftWrapper {
+                        .numberOfInstallment {
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                        .gracePeriod {
+                            span {
+                                margin-right: 5px;
+                            }
+                        }
+                        .smsSentWrapper {
+                            margin-top: 24px;
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                        .emailSentWrapper {
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                    }
+                    .rightWrapper {
+                        p {
+                            margin-top: 5px;
+                            span {
+                                margin-right: 5px;
+                            }
+                        }
+                    }
+                }
+                .documentsWrapper {
+                    margin-top: 65px;
+                    p {
+                        font-size: 16px;
+                        font-weight: 700;
+                    }
+                    .fileWrapper {
+                        margin-top: 16px;
+                        width: 140px;
+                        height: 140px;
+                        padding: 16px;
+                        background-color: #6e60df;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                        border-radius: 23px;
+                        .imageWrapper {
+                            position: relative;
+                            width: 32px;
+                            height: 36px;
+                            background-color: transparent;
+                        }
+                        p {
+                            margin-top: 16px;
+                            font-size: 12px;
+                            color: #fff;
+                            width: 100%;
+                            text-align: center;
+                        }
+                        button.imageWrapper {
+                            margin-top: 20px;
+                            width: 24px;
+                            height: 16px;
+                            border: none;
+                        }
+                    }
+                }
+                .installmentWrapper {
+                    margin-top: 60px;
+                    font-size: 16px;
+                    .installmentHeaderWrapper {
+                        font-weight: 700;
+                        display: flex;
+                        justify-content: space-between;
+
+                        p {
+                            text-align: center;
+                            width: 140px;
+                        }
+                    }
+                    .installmentContainer {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 12px;
+                        height: 60px;
+                        background: #98ffc1;
+                        box-shadow: (0px 4px 4px #00983d);
+                        border-radius: 27px;
+                        padding: 16px 0;
+                        p {
+                            text-align: center;
+                            width: 140px;
+                            span {
+                                margin-right: 3px;
+                            }
+                        }
+                    }
+                    .toPay {
+                        background: #dcdbfa;
+                        box-shadow: (0px 4px 4px rgba(110, 96, 223, 0.75));
+                    }
+                    .late {
+                        background: #ffe2a9;
+                        box-shadow: (0px 4px 4px #f7a300);
+                    }
+                    .bigLate {
+                        background: #ffa9a9;
+                        box-shadow: (0px 4px 4px #ff0000);
+                    }
+                    .paid {
+                        background: #98ffc1;
+                        box-shadow: (0px 4px 4px #00983d);
+                    }
+                }
+            }
+        }
+    }
+}

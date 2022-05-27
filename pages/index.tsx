@@ -3,21 +3,17 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
-const isUserLogin = false;
-
 const Home: NextPage = () => {
+    //? Variables
     const router = useRouter();
+    //? Use effect
     useEffect(() => {
-        if (isUserLogin) {
-            router.push("/dashboard");
-        } else {
-            router.push("/login");
-        }
+        router.push("/login");
     });
     return (
         <>
             <h1>Something went wrong...</h1>
-            <Link href="/dashboard">Back to dashboard</Link>
+            <Link href="/login">Back to login</Link>
         </>
     );
 };

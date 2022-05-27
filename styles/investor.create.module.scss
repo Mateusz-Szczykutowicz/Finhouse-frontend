@@ -1,0 +1,140 @@
+.wrapper {
+    margin-top: -50px;
+    .container {
+        margin-top: 50px;
+        position: relative;
+        display: flex;
+        padding: 0 100px;
+        .nav {
+            margin-top: 20px;
+            margin-right: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            // background-color: wheat;
+            .category {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                width: 66px;
+                height: 66px;
+                border: 1px solid #828282;
+                margin-bottom: 20px;
+                margin-top: 20px;
+                background-color: transparent;
+                cursor: pointer;
+                transition: 0.2s;
+                .imageWrapper {
+                    position: relative;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+            .category:hover {
+                // border: 1px solid #6e60df;
+                background-color: #eaebf7;
+            }
+            .active {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 66px;
+                height: 66px;
+                background-color: #6e60df;
+                border: none;
+                border-radius: 50%;
+                img {
+                    fill: #fff;
+                    border-color: #fff;
+                    border: none;
+                }
+            }
+            .active:hover {
+                background-color: #6e60df;
+            }
+        }
+        .investorWrapper {
+            h2 {
+                font-size: 40px;
+            }
+            .investorContainer {
+                margin-top: 40px;
+                background-color: #fff;
+                box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                border-radius: 23px;
+                width: 1050px;
+                padding: 36px 20px;
+                form {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    width: 100%;
+                    gap: 40px 0;
+                    .textInputWrapper {
+                        display: flex;
+                        flex-wrap: wrap;
+                        justify-content: space-between;
+                        gap: 24px 0;
+                        .textInput {
+                            width: 500px;
+                            height: 60px;
+                            padding: 12px 20px;
+                            border: 1px solid #6e60df;
+                            box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                            border-radius: 23px;
+                            outline: none;
+                            font-size: 16px;
+                            font-weight: 700;
+                            color: #828282;
+                        }
+                    }
+                    label {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        text-align: center;
+                        span {
+                            display: block;
+                            width: 350px;
+                            border: 1px solid #6e60df;
+                            box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                            border-radius: 23px;
+                            padding: 12px 20px;
+                            margin-right: 20px;
+                            user-select: none;
+                            cursor: pointer;
+                        }
+                        .contractInput {
+                            display: none;
+                        }
+                        .contractCheckbox {
+                            // margin-right: -30px;
+                            display: none;
+                            //! do poprawy
+                        }
+                        .checkboxComponent {
+                            position: relative;
+                            width: 24px;
+                            height: 24px;
+                            margin-right: -35px;
+                        }
+                    }
+                    button.send {
+                        margin-top: 25px;
+                        width: 300px;
+                        height: 50px;
+                        background: #6e60df;
+                        box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+                        border-radius: 23px;
+                        border: none;
+                        outline: none;
+                        color: #fff;
+                        cursor: pointer;
+                    }
+                }
+            }
+        }
+    }
+}

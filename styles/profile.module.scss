@@ -1,0 +1,102 @@
+.wrapper {
+    margin-top: -50px;
+    .container {
+        margin-top: 50px;
+        position: relative;
+        display: flex;
+        padding: 0 100px;
+        .nav {
+            margin-top: 20px;
+            margin-right: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            // background-color: wheat;
+            .category {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                width: 66px;
+                height: 66px;
+                border: 1px solid #828282;
+                margin-bottom: 20px;
+                margin-top: 20px;
+                background-color: transparent;
+                cursor: pointer;
+                transition: 0.2s;
+                .imageWrapper {
+                    position: relative;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+            .category:hover {
+                // border: 1px solid #6e60df;
+                background-color: #eaebf7;
+            }
+            .active {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 66px;
+                height: 66px;
+                background-color: #6e60df;
+                border: none;
+                border-radius: 50%;
+                img {
+                    fill: #fff;
+                    border-color: #fff;
+                    border: none;
+                }
+            }
+            .active:hover {
+                background-color: #6e60df;
+            }
+        }
+        .content {
+            width: 630px;
+            margin-left: 190px;
+            margin-top: 60px;
+            h2 {
+                font-size: 40px;
+                margin-bottom: 60px;
+            }
+            form {
+                input {
+                    width: 630px;
+                    height: 60px;
+                    background: #ffffff;
+                    box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                    border-radius: 27px;
+                    border: none;
+                    outline: none;
+                    margin-top: 24px;
+                    padding: 25px 20px;
+                    font-weight: 700;
+                    font-size: 18px;
+                    color: #828282;
+                }
+                input:focus {
+                    border: 1px solid rgba(110, 96, 223, 0.75);
+                }
+                button {
+                    display: block;
+                    width: 250px;
+                    height: 60px;
+                    margin: auto;
+                    margin-top: 100px;
+                    background: #6e60df;
+                    box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                    border-radius: 27px;
+                    border: none;
+                    font-weight: 700;
+                    font-size: 20px;
+                    color: #ffffff;
+                    cursor: pointer;
+                }
+            }
+        }
+    }
+}

@@ -7,7 +7,15 @@ import Header from "../components/Header";
 
 import styles from "../styles/register.module.scss";
 
+import { userI } from "../interfaces/user.interface";
+import { useRouter } from "next/router";
+import { responseI } from "../interfaces/general.interface";
+
 const Register: NextPage = () => {
+    //? Variables
+    const router = useRouter();
+
+    //? Use state
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [retypePassword, setRetypePassword] = useState("");
@@ -16,8 +24,32 @@ const Register: NextPage = () => {
     const [investmentAmount, setInvestmentAmount] = useState("");
     const [adress, setAdress] = useState("");
 
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        const registerData: userI = {
+            adress,
+            email,
+            investmentAmount,
+            name,
+            password,
+            tel,
+        };
+        const registerResult = await fetch(
+            `http://localhost:8000/users/register`,
+            {
+                method: "POST",
+                body: JSON.stringify(registerData),
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        const response: responseI = await registerResult.json();
+        if (response.status === 201) {
+            router.push("/check");
+        }
+        console.log("response :>> ", response);
     };
 
     return (
@@ -47,6 +79,7 @@ const Register: NextPage = () => {
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
                         />
                         <input
                             type="password"
@@ -55,6 +88,7 @@ const Register: NextPage = () => {
                             placeholder="Hasło"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
                         <input
                             type="password"
@@ -63,6 +97,7 @@ const Register: NextPage = () => {
                             placeholder="Powtórz hasło"
                             value={retypePassword}
                             onChange={(e) => setRetypePassword(e.target.value)}
+                            required
                         />
                         <input
                             type="text"
@@ -71,6 +106,7 @@ const Register: NextPage = () => {
                             placeholder="Imię i nazwisko"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            required
                         />
                         <input
                             type="tel"
@@ -79,6 +115,7 @@ const Register: NextPage = () => {
                             placeholder="Numer telefonu w formacie 000000000"
                             value={tel}
                             onChange={(e) => setTel(e.target.value)}
+                            required
                         />
                         <input
                             type="text"
@@ -89,6 +126,7 @@ const Register: NextPage = () => {
                             onChange={(e) =>
                                 setInvestmentAmount(e.target.value)
                             }
+                            required
                         />
                         <input
                             type="text"
@@ -97,6 +135,7 @@ const Register: NextPage = () => {
                             placeholder="Pełen adres korespondencyjny "
                             value={adress}
                             onChange={(e) => setAdress(e.target.value)}
+                            required
                         />
                         <button type="submit">Zarejestruj się</button>
                     </form>

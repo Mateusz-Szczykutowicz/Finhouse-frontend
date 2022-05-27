@@ -1,0 +1,138 @@
+.wrapper {
+    margin-top: -50px;
+    .container {
+        margin-top: 50px;
+        position: relative;
+        display: flex;
+        padding: 0 100px;
+        .nav {
+            margin-top: 20px;
+            margin-right: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            // background-color: wheat;
+            .category {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                width: 66px;
+                height: 66px;
+                border: 1px solid #828282;
+                margin-bottom: 20px;
+                margin-top: 20px;
+                background-color: transparent;
+                cursor: pointer;
+                transition: 0.2s;
+                .imageWrapper {
+                    position: relative;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+            .category:hover {
+                // border: 1px solid #6e60df;
+                background-color: #eaebf7;
+            }
+            .active {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 66px;
+                height: 66px;
+                background-color: #6e60df;
+                border: none;
+                border-radius: 50%;
+                img {
+                    fill: #fff;
+                    border-color: #fff;
+                    border: none;
+                }
+            }
+            .active:hover {
+                background-color: #6e60df;
+            }
+        }
+        .investorsListWrapper {
+            position: relative;
+            width: 1000px;
+            h2 {
+                font-size: 40px;
+            }
+            .newInvestor {
+                position: absolute;
+                top: 2.5px;
+                right: 300px;
+                z-index: 2;
+                height: 46px;
+                padding: 12px 36px;
+                font-size: 14px;
+                color: #fff;
+                background-color: #6e60df;
+                border: none;
+                box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+                border-radius: 23px;
+                margin-right: 20px;
+                cursor: pointer;
+            }
+            .filters {
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 50px;
+                width: 300px;
+                border: 16px solid #fff;
+                box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                border-radius: 27px;
+                font-size: 14px;
+                font-weight: 700;
+                color: #4f4f4f;
+                outline: none;
+            }
+            .investorsListContainer {
+                margin-top: 50px;
+                width: 100%;
+                .investorElementWrapper {
+                    display: flex;
+                    justify-content: space-between;
+                    background-color: #fff;
+                    transition: 0.1s;
+                    border-radius: 27px;
+                    width: 100%;
+                    padding: 20px 32px;
+                    margin-top: 20px;
+                    cursor: pointer;
+                    .leftWrapper {
+                        h3 {
+                            font-size: 20px;
+                        }
+                        h4 {
+                            margin-top: 20px;
+                            font-size: 12px;
+                            color: #828282;
+                            span {
+                                margin-right: 5px;
+                            }
+                        }
+                    }
+                    .rightWrapper {
+                        width: 360px;
+                        p {
+                            margin-top: 5px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            span {
+                                margin-right: 5px;
+                            }
+                        }
+                    }
+                }
+                .investorElementWrapper:hover {
+                    box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
+                }
+            }
+        }
+    }
+}

@@ -6,7 +6,7 @@ const Footer: NextPage = () => {
     return (
         <div className={styles.footer}>
             <h3>
-                <span>&copy; 2022 All Rights reserved | </span>
+                <span>FinHouse &copy; 2022 All Rights reserved | </span>
                 <span>Created by </span>
                 <a
                     href="https://deltastorm.pl/"

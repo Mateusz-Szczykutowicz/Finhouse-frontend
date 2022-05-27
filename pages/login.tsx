@@ -4,35 +4,58 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { useRouter } from "next/router";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { deleteCookie, getCookie, setCookie } from "../scripts/cookie.script";
+import { getCookie, setCookie } from "../utils/scripts/cookie.script";
 
 import styles from "../styles/login.module.scss";
+import { loginFetch } from "../utils/scripts/fetchData.script";
 
 const Login: NextPage = () => {
     const [token, setToken] = useState("");
-    const [login, setLogin] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const router = useRouter();
+    if (getCookie("token")) {
+        router.push("/dashboard");
+    }
 
-    useEffect(() => {
-        setToken(getCookie("token"));
-        if (token) {
-            router.push("/dashboard");
-        }
-    }, [token, router]);
+    // useEffect(() => {
+    //     setToken(getCookie("token"));
+    //     if (token) {
+    //         router.push("/dashboard");
+    //     }
+    // }, [token, router]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        console.log("login :>> ", login);
-        console.log("password :>> ", password);
-        if (login === "Psikut" && password === "Psikut") {
-            setCookie("token", password, { path: "/", maxAge: 15 });
-            router.push("/dashboard");
-        }
+
+        const loginData: { email: string; password: string } = {
+            email,
+            password,
+        };
+
+        loginFetch(loginData)
+            .then((response) => {
+                if (response.status === 200) {
+                    setCookie("token", response.data, {
+                        path: "/",
+                        maxAge: 60 * 24,
+                    });
+                    setToken(getCookie("token"));
+
+                    router.push("/dashboard");
+                } else {
+                    alert("Zły login lub hasło");
+                }
+                console.log("response :>> ", response);
+            })
+            .catch((err) => {
+                console.log("err :>> ", err);
+                alert("Coś poszło nie tak! Skontaktuj się z administratorem.");
+            });
     };
 
     return (
@@ -46,7 +69,7 @@ const Login: NextPage = () => {
                 <main className={styles.container}>
                     <div className={styles.imageWrapper}>
                         <Image
-                            src="/images/login.svg"
+                            src="/images/login/login.svg"
                             layout="fill"
                             alt="Login"
                         />
@@ -61,9 +84,9 @@ const Login: NextPage = () => {
                             type="text"
                             name="login"
                             id="login"
-                            placeholder="Login"
-                            value={login}
-                            onChange={(e) => setLogin(e.target.value)}
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                         <input
                             type="password"
@@ -77,7 +100,8 @@ const Login: NextPage = () => {
                             Zaloguj
                         </button>
                         <button
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.preventDefault();
                                 router.push("/register");
                             }}
                             className={styles.registerButton}
