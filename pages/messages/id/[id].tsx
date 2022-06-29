@@ -2,41 +2,44 @@ import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
 import PermissionGate from "../../../components/PermissionGate";
-import { investmentResponseI } from "../../../interfaces/investments.interface";
-import { messagesI } from "../../../interfaces/messages.interface";
+import { responseI } from "../../../interfaces/general.interface";
 import { PermissionE } from "../../../interfaces/permission.interface";
-
 import styles from "../../../styles/message.id.module.scss";
+import config from "../../../utils/config";
 import useSession from "../../../utils/lib/useSession";
+import useUser from "../../../utils/lib/useUser";
+import { fetchData } from "../../../utils/scripts/fetchData.script";
 
 const Message: NextPage<{
-    message: messagesI;
-    investments: investmentResponseI[];
-}> = ({ message, investments }) => {
+    response: responseI;
+}> = ({ response }) => {
     //? Variables
     const router = useRouter();
-    const user = PermissionE.INVESTOR;
-    const { id, author, content, subtitle, title } = message;
+    // const user = useMemo(() => PermissionE.INVESTOR, []);
+    const message = useMemo(() => response.data, [response]);
+    // const investments: investmentResponseI[] = useMemo(() => response.data.investments || [], [response]);
 
     //? use states
     const [investment, setInvestment] = useState("");
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
 
     //? Methods
-    const handleChange = (e: FormEvent<HTMLInputElement>) => {
-        console.log("Value :>> ", e.currentTarget.value);
-        setInvestment(e.currentTarget.value);
-    };
+    // const handleChange = (e: FormEvent<HTMLInputElement>) => {
+    //     console.log("Value :>> ", e.currentTarget.value);
+    //     setInvestment(e.currentTarget.value);
+    // };
 
-    const investemntList = investments.map(({ name }) => (
-        <option value={name} key={name} />
-    ));
+    // const investemntList = investments.map(({ name }) => (
+    //     <option value={name} key={name} />
+    // ));
+    // const investmentList = null;
     return (
         <div className={styles.wrapper}>
             <Head>
@@ -93,18 +96,23 @@ const Message: NextPage<{
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -131,9 +139,9 @@ const Message: NextPage<{
                     <h2>Wiadomość</h2>
                     <div
                         className={styles.messageContainer}
-                        key={id.toString()}
+                        key={message ? message.id : "0"}
                     >
-                        <PermissionGate
+                        {/* <PermissionGate
                             permission={PermissionE.INVESTOR}
                             userPermission={user}
                         >
@@ -149,19 +157,21 @@ const Message: NextPage<{
                                     onChange={handleChange}
                                 />
                                 <datalist id="investmentOptions">
-                                    {investemntList}
+                                    {investmentList}
                                 </datalist>
                             </form>
-                        </PermissionGate>
+                        </PermissionGate> */}
                         <div className={styles.headerContainer}>
-                            <h3>{title}</h3>
+                            <h3>{message ? message.title : "Tytuł"}</h3>
                             <h3>
                                 <span>Autor:</span>
-                                <span>{author}</span>
+                                <span>
+                                    {message ? message.author : "Autor"}
+                                </span>
                             </h3>
                         </div>
-                        <h4>{subtitle}</h4>
-                        <p>{content}</p>
+                        <h4>{message ? message.subtitle : "Podtytuł"}</h4>
+                        <p>{message ? message.content : "Wiadomość"}</p>
                     </div>
                 </div>
             </main>
@@ -171,50 +181,21 @@ const Message: NextPage<{
 };
 
 export const getServerSideProps: GetServerSideProps<{
-    message: messagesI;
-    investments: investmentResponseI[];
+    response: responseI;
 }> = async (context) => {
     if (!context.params) {
         return {
             props: {
-                message: {
-                    id: 0,
-                    title: "",
-                    author: "",
-                    subtitle: "",
-                    content: "",
-                },
-                investments: [],
+                response: { message: "Parametry nie istnieją", status: 400 },
             },
         };
     }
     const { token } = context.req.cookies;
-    const id: number = Number(context.params.id) || 0;
-
-    const messageResult = await fetch(
-        "http:/localhost:3000/data/messages.json",
-        {
-            method: "GET",
-            headers: { token },
-        }
-    );
-
-    const { messages }: { messages: messagesI[] } = await messageResult.json();
-
-    const message: messagesI = messages.find(
-        (message) => message.id === id
-    ) || { id: 0, author: "", title: "", subtitle: "", content: "" };
-
-    const investmentsResult = await fetch(
-        "http:/localhost:3000/data/investments.json",
-        {
-            method: "GET",
-            headers: { token },
-        }
-    );
-    const { investments }: { investments: investmentResponseI[] } =
-        await investmentsResult.json();
-    return { props: { message, investments } };
+    const id = context.params.id;
+    const url: RequestInfo = `${config.host}/users/messages/id/${id}`;
+    const { response } = await fetchData(url, { token });
+    console.log("response :>> ", response);
+    return { props: { response } };
 };
 
 export default Message;

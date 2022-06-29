@@ -1,18 +1,24 @@
 import { responseI } from "../../interfaces/general.interface";
 import { userResponseI } from "../../interfaces/user.interface";
+import config from "../config";
 import { getCookie, setCookie } from "./cookie.script";
 
+export enum MethodE {
+    GET = "GET",
+    POST = "POST",
+    PUT = "PUT",
+    PATCH = "PATCH",
+    DELETE = "DELETE",
+}
+
 export const checkToken = async (token: string): Promise<boolean> => {
-    const checkTokenResponse = await fetch(
-        `http://localhost:8000/users/check`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                token: token,
-            },
-        }
-    );
+    const checkTokenResponse = await fetch(`${config.host}/users/check`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            token: token,
+        },
+    });
     const response = await checkTokenResponse.json();
     console.log("response :>> ", response);
     if (response.status === 200) {
@@ -25,7 +31,7 @@ export const loginFetch = async (data: {
     email: string;
     password: string;
 }): Promise<responseI> => {
-    const registerResult = await fetch(`http://localhost:8000/users/login`, {
+    const registerResult = await fetch(`${config.host}/users/login`, {
         method: "POST",
         body: JSON.stringify(data),
         mode: "cors",
@@ -38,20 +44,21 @@ export const loginFetch = async (data: {
 };
 
 export const fetchData = async (
-    URL: URL,
+    URL: RequestInfo,
     {
         token,
-        contentType = "application/json",
-        method = "GET",
+        contentType,
+        method = MethodE.GET,
         data,
-    }: { token: string; contentType?: string; method?: string; data?: any }
+    }: { token: string; contentType?: string; method?: MethodE; data?: any }
 ): Promise<{ response: responseI }> => {
-    if (method === "GET") {
+    if (method === MethodE.GET) {
         const responseData = await fetch(URL, {
-            method: "GET",
+            method: MethodE.GET,
             headers: {
                 token: token,
-                "Content-Type": contentType,
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
             },
         }).catch((err) => {
             console.log("err :>> ", err);
@@ -65,25 +72,51 @@ export const fetchData = async (
             };
         }
     } else {
-        const responseData = await fetch(URL, {
-            method: method,
-            headers: {
-                token: token,
-            },
-            body: data,
-        }).catch((err) => {
-            console.log("err :>> ", err);
-        });
-        if (responseData) {
-            const response: responseI = await responseData.json();
-            return { response };
-        } else {
-            return {
-                response: {
-                    message: "Internal server error",
-                    status: 500,
+        if (contentType) {
+            const responseData = await fetch(URL, {
+                method: method,
+                headers: {
+                    token: token,
+                    "Content-Type": contentType,
+                    "Access-Control-Allow-Origin": "*",
                 },
-            };
+                body: data,
+            }).catch((err) => {
+                console.log("err :>> ", err);
+            });
+            if (responseData) {
+                const response: responseI = await responseData.json();
+                return { response };
+            } else {
+                return {
+                    response: {
+                        message: "Internal server error",
+                        status: 500,
+                    },
+                };
+            }
+        } else {
+            const responseData = await fetch(URL, {
+                method: method,
+                headers: {
+                    token: token,
+                    "Access-Control-Allow-Origin": "*",
+                },
+                body: data,
+            }).catch((err) => {
+                console.log("err :>> ", err);
+            });
+            if (responseData) {
+                const response: responseI = await responseData.json();
+                return { response };
+            } else {
+                return {
+                    response: {
+                        message: "Internal server error",
+                        status: 500,
+                    },
+                };
+            }
         }
     }
 };

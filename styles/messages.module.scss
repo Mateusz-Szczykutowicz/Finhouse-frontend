@@ -98,14 +98,42 @@
                 }
             }
             .message {
+                position: relative;
                 margin-top: 20px;
                 width: 1000px;
                 background-color: #fff;
                 box-shadow: 0px 4px 4px rgba(110, 96, 223, 0.75);
                 border-radius: 27px;
                 padding: 20px 32px;
+                cursor: pointer;
+                .titleWrapper {
+                    display: flex;
+                    gap: 0 20px;
+                }
+                .newMessage {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    top: 20px;
+                    left: 40px;
+                    color: #fff;
+                    border-radius: 27px;
+                    padding: 0 12px;
+                    font-size: 12px;
+                    background-color: #5d5fef;
+                }
                 h3 {
                     font-size: 20px;
+                }
+                .author {
+                    position: absolute;
+                    top: 20px;
+                    right: 32px;
+                    font-size: 12px;
+                    color: #828282;
+                    span {
+                        margin-left: 5px;
+                    }
                 }
                 h4 {
                     margin-top: 3px;

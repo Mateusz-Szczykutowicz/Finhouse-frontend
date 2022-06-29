@@ -2,28 +2,22 @@ import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import { checkToken } from "../../utils/scripts/fetchData.script";
-import { deleteCookie, getCookie } from "../../utils/scripts/cookie.script";
-
+import { fetchData, MethodE } from "../../utils/scripts/fetchData.script";
 import styles from "../../styles/profile.module.scss";
 import useSession from "../../utils/lib/useSession";
+import PermissionGate from "../../components/PermissionGate";
+import { PermissionE } from "../../interfaces/permission.interface";
+import useUser from "../../utils/lib/useUser";
+import config from "../../utils/config";
 
 const Profile: NextPage = () => {
     //? Variables
     const router = useRouter();
-    const user = {
-        //! do poprawy!!!
-        email: "andrzej.nowak@example.com",
-        name: "Andrzej Nowak",
-        tel: "508 903 004",
-        adress: "Adres korespondencyjny",
-    };
 
     //? Use state
-    const [token, setToken] = useState("");
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [tel, setTel] = useState("");
@@ -31,11 +25,36 @@ const Profile: NextPage = () => {
 
     //? Use effect
     useSession();
-
+    const { user, userPermission, token } = useUser();
     //? Methods
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
-    };
+    const handleSubmit = useCallback(
+        async (e: FormEvent) => {
+            e.preventDefault();
+            const data = {
+                email: email || user.email,
+                name: name || user.name,
+                tel: tel || user.tel,
+                adress: adress || user.adress,
+            };
+            console.log("data :>> ", data);
+            const url: RequestInfo = `${config.host}/users`;
+            console.log("url :>> ", url);
+            const { response } = await fetchData(url, {
+                token,
+                data: JSON.stringify(data),
+                method: MethodE.PUT,
+            });
+            console.log("response :>> ", response);
+            if (response.status === 400) {
+                alert("Coś poszło nie tak");
+            }
+            if (response.status === 200) {
+                alert("Pomyślnie zaktualizowano dane");
+                router.push("/dashboard");
+            }
+        },
+        [adress, email, name, router, tel, token, user]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -93,18 +112,23 @@ const Profile: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -134,7 +158,7 @@ const Profile: NextPage = () => {
                             type="email"
                             name="email"
                             id="email"
-                            placeholder={user.email}
+                            placeholder={user ? user.email : "Email"}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -142,7 +166,7 @@ const Profile: NextPage = () => {
                             type="text"
                             name="name"
                             id="name"
-                            placeholder={user.name}
+                            placeholder={user ? user.name : "Nazwa"}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
@@ -150,7 +174,7 @@ const Profile: NextPage = () => {
                             type="tel"
                             name="tel"
                             id="tel"
-                            placeholder={user.tel}
+                            placeholder={user ? user.tel : "Telefon"}
                             value={tel}
                             onChange={(e) => setTel(e.target.value)}
                         />
@@ -158,7 +182,7 @@ const Profile: NextPage = () => {
                             type="text"
                             name="adress"
                             id="adress"
-                            placeholder={user.adress}
+                            placeholder={user ? user.adress : "Adres"}
                             value={adress}
                             onChange={(e) => setAdress(e.target.value)}
                         />

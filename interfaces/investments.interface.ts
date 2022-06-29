@@ -11,7 +11,7 @@ export interface investmentI {
     numberOfInstallment: number;
     gracePeriod: number;
     otherCommission: number;
-    contract: File;
+    contract: string;
 }
 
 export interface investmentResponseI {
@@ -27,5 +27,5 @@ export interface investmentResponseI {
     installmentAmount: number;
     numberOfInstallment: number;
     gracePeriod: number;
-    contract: File;
+    contract: string;
 }

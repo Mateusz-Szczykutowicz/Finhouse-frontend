@@ -2,20 +2,39 @@ import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import Router, { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { userI, userResponseI } from "../interfaces/user.interface";
-import { deleteCookie, getCookie } from "../utils/scripts/cookie.script";
+import { deleteCookie } from "../utils/scripts/cookie.script";
 import styles from "../styles/Header.module.scss";
 import PermissionGate from "./PermissionGate";
-import useSession from "../utils/lib/useSession";
 import useUser from "../utils/lib/useUser";
 import { PermissionE } from "../interfaces/permission.interface";
+import config from "../utils/config";
+import { fetchData } from "../utils/scripts/fetchData.script";
+import { messagesI } from "../interfaces/messages.interface";
 
 const Header: NextPage = () => {
     //? Variables
     const router = Router;
 
+    //? Use states
+    const [messages, setMessages] = useState<messagesI[]>([]);
+    const [countOfMessages, setCountOfMessages] = useState(0);
+
     //? Use effect
-    const { user, userPermission } = useUser();
+    const { user, userPermission, token } = useUser();
+    useEffect(() => {
+        if (token) {
+            const messagesUrl: RequestInfo = `${config.host}/users/messages/new`;
+            fetchData(messagesUrl, {
+                token,
+            }).then(({ response }) => {
+                if (response.data) {
+                    setMessages(response.data.messages);
+                    setCountOfMessages(response.data.length);
+                }
+            });
+        }
+    }, [token]);
+
     return (
         <div className={styles.wrapper}>
             <button
@@ -44,9 +63,10 @@ const Header: NextPage = () => {
             </PermissionGate> */}
             {userPermission !== PermissionE.GUEST ? (
                 <UserHeader
-                    userName={user.name || ""}
-                    messageCount={0}
-                    isAdmin={user.admin}
+                    userName={user ? user.name : ""}
+                    messageCount={countOfMessages}
+                    isAdmin={user ? user.admin : false}
+                    userPermission={userPermission}
                 />
             ) : null}
         </div>
@@ -57,21 +77,35 @@ const UserHeader: NextPage<{
     userName?: string;
     isAdmin?: boolean;
     messageCount?: number;
-}> = ({ userName, isAdmin, messageCount }) => {
+    userPermission: PermissionE;
+}> = ({ userName, isAdmin, messageCount, userPermission }) => {
     const router = useRouter();
     return (
         <div className={styles.userWrapper}>
-            <button className={styles.messages}>
-                <div className={styles.imageWrapper}>
-                    <Image
-                        src="/images/message.svg"
-                        layout="fill"
-                        alt="Wiadomość"
-                    />
-                </div>
-                <div className={styles.messageCount}>{messageCount}</div>
-            </button>
-            <div className={styles.imageWrapper}>
+            <PermissionGate
+                permission={PermissionE.INVESTOR}
+                userPermission={userPermission}
+            >
+                <button
+                    className={styles.messages}
+                    onClick={() => router.push("/messages")}
+                >
+                    <div className={styles.imageWrapper}>
+                        <Image
+                            src="/images/message.svg"
+                            layout="fill"
+                            alt="Wiadomość"
+                        />
+                    </div>
+                    <div className={styles.messageCount}>{messageCount}</div>
+                </button>
+            </PermissionGate>
+            <div
+                className={styles.imageWrapper}
+                onClick={() => {
+                    router.push("/dashboard/profile");
+                }}
+            >
                 <Image
                     src="/images/dashboard/avatar-placeholder.png"
                     layout="fill"
@@ -99,18 +133,6 @@ const UserHeader: NextPage<{
             </button>
         </div>
     );
-};
-
-export const getServerSideProps: GetServerSideProps<{
-    user: userResponseI;
-}> = async (context) => {
-    console.log("wykonuję :>> ");
-    const token = context.req.cookies.token;
-    const userResponse = await fetch("http://localhost:8000/users/", {
-        headers: { token: token },
-    });
-    const response = await userResponse.json();
-    return { props: { user: response.data } };
 };
 
 export default Header;

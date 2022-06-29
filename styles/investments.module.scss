@@ -96,6 +96,14 @@
                 transition: 0.1s;
                 border-radius: 27px;
                 cursor: pointer;
+                .deleteInvestment {
+                    position: relative;
+                    width: 20px;
+                    height: 20px;
+                    // display: none;
+                    border: none;
+                    cursor: pointer;
+                }
                 .leftWrapper {
                     h3 {
                         font-size: 20px;

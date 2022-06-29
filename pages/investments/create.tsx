@@ -2,7 +2,7 @@ import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import {
@@ -10,17 +10,22 @@ import {
     investorResponseI,
 } from "../../interfaces/investor.interface";
 import { getCookie } from "../../utils/scripts/cookie.script";
-
 import styles from "../../styles/investments.create.module.scss";
 import { responseI } from "../../interfaces/general.interface";
 import useSession from "../../utils/lib/useSession";
-import { fetchData } from "../../utils/scripts/fetchData.script";
+import { fetchData, MethodE } from "../../utils/scripts/fetchData.script";
+import useUser from "../../utils/lib/useUser";
+import PermissionGate from "../../components/PermissionGate";
+import { PermissionE } from "../../interfaces/permission.interface";
+import config from "../../utils/config";
 
 const Investments: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
-    const data: [{ investor: investorResponseI; invest: investI }] =
-        response.data || [];
+    const data: [{ investor: investorResponseI; invest: investI }] = useMemo(
+        () => response.data || [],
+        [response]
+    );
     const file: any = "";
     //? Use state
     const [isGraceActive, setIsGraceActive] = useState(false);
@@ -40,56 +45,90 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
     const [numberOfInstallment, setNumberOfInstallment] = useState("");
     const [gracePeriod, setGracePeriod] = useState("");
     const [otherCommission, setOtherCommission] = useState("");
-    const [contract, setContract] = useState(file);
+    const [files, setFiles] = useState(file);
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
 
     //? Methods
-    const handleChangeFileInput = (e: FormEvent<HTMLInputElement>) => {
-        if (e.currentTarget.files && e.currentTarget.value) {
-            setContract(e.currentTarget.files[0]);
-            setIsChooseFile(true);
-        } else {
-            setContract({ name: "Prześlij podpisaną umowę" });
-            setIsChooseFile(false);
-        }
-    };
+    const handleChangeFileInput = useCallback(
+        (e: FormEvent<HTMLInputElement>) => {
+            if (e.currentTarget.files && e.currentTarget.value) {
+                setFiles(e.currentTarget.files);
+                setIsChooseFile(true);
+            } else {
+                setFiles({ name: "Prześlij podpisaną umowę" });
+                setIsChooseFile(false);
+            }
+        },
+        []
+    );
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        const token = getCookie("token");
-        const investmentData = new FormData();
-        investmentData.append("commissionAmount", commissionAmount);
-        investmentData.append("contract", contract);
-        investmentData.append("email", email);
-        investmentData.append("firstInstallment", firstInstallment);
-        investmentData.append("gracePeriod", gracePeriod);
-        investmentData.append("installmentAmount", installmentAmount);
-        investmentData.append("investorCapital", investorCapital);
-        investmentData.append("investorId", investorId);
-        investmentData.append("lastInstallment", lastInstallment);
-        investmentData.append("name", name);
-        investmentData.append("numberOfInstallment", numberOfInstallment);
-        investmentData.append("otherCommission", otherCommission);
-        investmentData.append("tel", tel);
-        const investmentURL = new URL("http://localhost:8000/investments");
-        const investmentResponse = await fetchData(investmentURL, {
-            token,
-            method: "POST",
-            data: investmentData,
-        });
-        if (investmentResponse.response.status === 400) {
-            alert("Wypełnij wszystkie wymagane pola!");
-        }
-        console.log("response :>> ", response);
-    };
+    const handleSubmit = useCallback(
+        async (e: FormEvent) => {
+            e.preventDefault();
+            const token = getCookie("token");
+            const investmentData = new FormData();
+            investmentData.append("commissionAmount", commissionAmount);
 
-    const investorsList = data.map((e) => (
-        <option key={e.investor.id} value={e.investor.id}>
-            {e.investor.name}
-        </option>
-    ));
+            investmentData.append("email", email);
+            investmentData.append("firstInstallment", firstInstallment);
+            investmentData.append("gracePeriod", gracePeriod);
+            investmentData.append("installmentAmount", installmentAmount);
+            investmentData.append("investorCapital", investorCapital);
+            investmentData.append("investorId", investorId);
+            investmentData.append("lastInstallment", lastInstallment);
+            investmentData.append("name", name);
+            investmentData.append("numberOfInstallment", numberOfInstallment);
+            investmentData.append("otherCommission", otherCommission);
+            investmentData.append("tel", tel);
+
+            for (let i = 0; i < files.length; i++) {
+                investmentData.append("files", files[i]);
+            }
+            const investmentURL: RequestInfo = `${config.host}/investments`;
+            const investmentResponse = await fetchData(investmentURL, {
+                token,
+                method: MethodE.POST,
+                data: investmentData,
+            });
+            if (investmentResponse.response.status === 400) {
+                alert("Wypełnij wszystkie wymagane pola!");
+            }
+            console.log("response :>> ", response);
+            if (response.status === 200) {
+                router.push("/investments");
+            }
+        },
+        [
+            email,
+            files,
+            commissionAmount,
+            firstInstallment,
+            gracePeriod,
+            installmentAmount,
+            investorCapital,
+            investorId,
+            lastInstallment,
+            name,
+            numberOfInstallment,
+            otherCommission,
+            response,
+            router,
+            tel,
+        ]
+    );
+
+    const investorsList = useMemo(
+        () =>
+            data.map((e) => (
+                <option key={e.investor.id} value={e.investor.id}>
+                    {e.investor.name}
+                </option>
+            )),
+        [data]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -147,18 +186,23 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -215,6 +259,7 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                             name="borrower"
                             id="borrower"
                             placeholder="* Nazwa Pożyczkobiorcy"
+                            required
                             className={styles.bigInput}
                             value={name}
                             onChange={(e) => {
@@ -227,6 +272,7 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="email"
                                 id="email"
                                 placeholder="* Email pożyczkobiorcy"
+                                required
                                 className={styles.smallInput}
                                 value={email}
                                 onChange={(e) => {
@@ -238,6 +284,7 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="tel"
                                 id="tel"
                                 placeholder="* Nr. telefonu Pożyczkobiorcy"
+                                required
                                 className={styles.smallInput}
                                 value={tel}
                                 onChange={(e) => {
@@ -248,12 +295,13 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 htmlFor="startDate"
                                 className={styles.smallInput}
                             >
-                                <span>Data pierwszej raty:</span>
+                                <span>* Data pierwszej raty:</span>
                                 <input
                                     type="date"
                                     name="startDate"
                                     id="startDate"
                                     placeholder="Data pierwszej raty"
+                                    required
                                     value={firstInstallment}
                                     onChange={(e) => {
                                         setFirstInstallment(e.target.value);
@@ -264,11 +312,12 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 htmlFor="finishDate"
                                 className={styles.smallInput}
                             >
-                                <span>Data ostatniej raty:</span>
+                                <span>* Data ostatniej raty:</span>
                                 <input
                                     type="date"
                                     name="finishDate"
                                     id="finishDate"
+                                    required
                                     value={lastInstallment}
                                     onChange={(e) => {
                                         setLastInstallment(e.target.value);
@@ -280,6 +329,9 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="capital"
                                 id="capital"
                                 placeholder="* Kapitał inwestora"
+                                required
+                                step={0.01}
+                                min={0}
                                 className={styles.smallInput}
                                 value={investorCapital}
                                 onChange={(e) => {
@@ -291,6 +343,9 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="commission"
                                 id="commission"
                                 placeholder="* Kwota prowizji"
+                                required
+                                step={0.01}
+                                min={0}
                                 className={styles.smallInput}
                                 value={commissionAmount}
                                 onChange={(e) => {
@@ -302,6 +357,9 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="installment"
                                 id="installment"
                                 placeholder="* Kwota raty"
+                                required
+                                step={0.01}
+                                min={0}
                                 className={styles.smallInput}
                                 value={installmentAmount}
                                 onChange={(e) => {
@@ -313,6 +371,9 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="numberOfInstallment"
                                 id="numberOfInstallment"
                                 placeholder="* Ilość rat"
+                                step={1}
+                                min={1}
+                                required
                                 className={styles.smallInput}
                                 value={numberOfInstallment}
                                 onChange={(e) => {
@@ -355,6 +416,8 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                             name="gracePeriod"
                             id="gracePeriod"
                             placeholder="Ilość miesięcy karencji"
+                            step={1}
+                            min={0}
                             className={styles.smallInput}
                             disabled={!isGraceActive}
                             value={gracePeriod}
@@ -369,13 +432,15 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 }`}
                             >
                                 {isChooseFile
-                                    ? contract.name
+                                    ? `Wybrane pliki: ${files.length}`
                                     : "Prześlij podpisaną umowę"}
                             </span>
                             <input
                                 type="file"
                                 name="file"
                                 id="file"
+                                required
+                                multiple
                                 onChange={handleChangeFileInput}
                             />
                         </label>
@@ -432,7 +497,7 @@ export const getServerSideProps: GetServerSideProps<{
     response: responseI;
 }> = async (context) => {
     const token = context.req.cookies.token;
-    const investorsResult = await fetch("http://localhost:8000/investors", {
+    const investorsResult = await fetch(`${config.host}/investors`, {
         headers: { token: token, "Context-Type": "application/json" },
     });
     const response: responseI = await investorsResult.json();

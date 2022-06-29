@@ -1,24 +1,44 @@
-import { NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { useCallback, useMemo } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
+import PermissionGate from "../../components/PermissionGate";
+import { responseI } from "../../interfaces/general.interface";
+import { OperationI } from "../../interfaces/operation.interface";
+import { PermissionE } from "../../interfaces/permission.interface";
 
 import styles from "../../styles/operation.module.scss";
+import config from "../../utils/config";
 import useSession from "../../utils/lib/useSession";
+import useUser from "../../utils/lib/useUser";
+import { fetchData } from "../../utils/scripts/fetchData.script";
+import { getDate } from "../../utils/scripts/getDate.scripr";
 
-const Operation: NextPage = () => {
+const Operation: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
+    const operations: OperationI[] = useMemo(
+        () => response.data || [],
+        [response]
+    );
 
     //? Use state
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
 
     //? Methods
-
+    const operationsList = useMemo(
+        () =>
+            operations.map((operation) => (
+                <OperationElement operation={operation} key={operation.id} />
+            )),
+        [operations]
+    );
     return (
         <div className={styles.wrapper}>
             <Head>
@@ -75,18 +95,23 @@ const Operation: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -118,26 +143,9 @@ const Operation: NextPage = () => {
                             <p className={styles.third}>Kwota</p>
                             <p className={styles.fourth}>Data</p>
                         </div>
-                        <OperationElement
-                            payer="Teanscom Sp. z o.o."
-                            title="przelew w ramach umowy pozyczki zawartej dnia bla bla bla"
-                            amount={1000}
-                            date={new Date()}
-                        />
-                        <OperationElement
-                            payer="Teanscom Sp. z o.o."
-                            title="przelew w ramach umowy pozyczki zawartej dnia bla bla bla"
-                            amount={1000}
-                            date={new Date()}
-                        />
-                        <OperationElement
-                            payer="Teanscom Sp. z o.o."
-                            title="przelew w ramach umowy pozyczki zawartej dnia bla bla bla"
-                            amount={1000}
-                            date={new Date()}
-                        />
+                        {operationsList}
                     </div>
-                    <div className={styles.navWrapper}>
+                    {/* <div className={styles.navWrapper}>
                         <button>
                             <div className={styles.imageWrapper}>
                                 <Image
@@ -167,7 +175,7 @@ const Operation: NextPage = () => {
                                 />
                             </div>
                         </button>
-                    </div>
+                    </div> */}
                 </div>
             </main>
             <Footer />
@@ -176,23 +184,13 @@ const Operation: NextPage = () => {
 };
 
 const OperationElement: NextPage<{
-    payer: string;
-    title: string;
-    amount: number;
-    date: Date;
-}> = ({ amount, date, payer, title }) => {
-    const getDate = (date: Date): string => {
-        const day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
-        const month =
-            date.getMonth() < 10
-                ? `0${date.getMonth() + 1}`
-                : date.getMonth() + 1;
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}r.`;
-    };
+    operation: OperationI;
+}> = ({ operation }) => {
+    const { amount, createdAt, name, title } = operation;
+    const date = new Date(createdAt);
     return (
         <div className={styles.operationElementWrapper}>
-            <p className={styles.first}>{payer}</p>
+            <p className={styles.first}>{name}</p>
             <p className={styles.second}>{title}</p>
             <p className={styles.third}>
                 <span>{amount}</span>
@@ -201,6 +199,15 @@ const OperationElement: NextPage<{
             <p className={styles.fourth}>{getDate(date)}</p>
         </div>
     );
+};
+
+export const getServerSideProps: GetServerSideProps<{
+    response: responseI;
+}> = async (context) => {
+    const token = context.req.cookies.token;
+    const url: RequestInfo = `${config.host}/users/operations`;
+    const { response } = await fetchData(url, { token });
+    return { props: { response } };
 };
 
 export default Operation;

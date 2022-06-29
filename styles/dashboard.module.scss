@@ -434,7 +434,9 @@
                     }
                 }
                 .statementButton {
-                    display: block;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     margin-top: 24px;
                     width: 286px;
                     height: 46px;
@@ -445,6 +447,9 @@
                     font-size: 14px;
                     background-color: #fff;
                     cursor: pointer;
+                    input {
+                        display: none;
+                    }
                 }
                 .statementButton:hover {
                     border: 1px solid #6e60df;

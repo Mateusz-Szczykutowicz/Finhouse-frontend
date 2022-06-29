@@ -1,7 +1,10 @@
 export interface messagesI {
-    id: number;
+    id: string;
+    sender: string;
+    sendTo: string;
     title: string;
-    author: string;
     subtitle: string;
     content: string;
+    author: string;
+    isNewStatus: boolean;
 }

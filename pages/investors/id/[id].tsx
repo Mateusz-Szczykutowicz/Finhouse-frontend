@@ -1,19 +1,20 @@
-import { GetServerSideProps, NextPage } from "next";
+import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
-
 import styles from "../../../styles/investors.id.module.scss";
 import {
     getCurrentDateString,
     getCurrentMonth,
 } from "../../../utils/scripts/getDate.scripr";
 import useSession from "../../../utils/lib/useSession";
-
+import useUser from "../../../utils/lib/useUser";
+import PermissionGate from "../../../components/PermissionGate";
+import { PermissionE } from "../../../interfaces/permission.interface";
 //* Main component
 const Dashboard: NextPage = () => {
     //? Variables
@@ -24,14 +25,18 @@ const Dashboard: NextPage = () => {
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
 
     //? Methods
-    const handleDateInputChange = (e: FormEvent<HTMLInputElement>) => {
-        console.log("e.value :>> ", e.currentTarget.value);
-        setDateInput(e.currentTarget.value);
+    const handleDateInputChange = useCallback(
+        (e: FormEvent<HTMLInputElement>) => {
+            console.log("e.value :>> ", e.currentTarget.value);
+            setDateInput(e.currentTarget.value);
 
-        //! Dodać wysyłanie do bazy danych o zmianę danych
-    };
+            //! Dodać wysyłanie do bazy danych o zmianę danych
+        },
+        []
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -89,18 +94,23 @@ const Dashboard: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={`${styles.category} ${styles.active}`}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users-active.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}

@@ -4,6 +4,7 @@ const nextConfig = {
     experimental: {
         outputStandalone: true,
     },
+    // presets: ["next/babel"],
 };
 
 module.exports = nextConfig;

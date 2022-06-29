@@ -1,39 +1,144 @@
-import { NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-
 import styles from "../styles/dashboard.module.scss";
 import {
     getCurrentDateString,
     getCurrentMonth,
+    getDate,
 } from "../utils/scripts/getDate.scripr";
 import useSession from "../utils/lib/useSession";
+import { responseI } from "../interfaces/general.interface";
+import { fetchData, MethodE } from "../utils/scripts/fetchData.script";
+import useUser from "../utils/lib/useUser";
+import PermissionGate from "../components/PermissionGate";
+import { PermissionE } from "../interfaces/permission.interface";
+import config from "../utils/config";
+import { statementI } from "../interfaces/statement.interface";
+import lang from "../utils/locales/pl.lang.json";
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis } from "recharts";
 
 //* Functions
 
 //* Main component
-const Dashboard: NextPage = () => {
+const Dashboard: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
+    const allInvestments = useMemo(() => response.data.all || null, [response]);
+    const activeInvestments = useMemo(
+        () => response.data.active || null,
+        [response]
+    );
+    const finishedInvestments = useMemo(
+        () => response.data.finished || null,
+        [response]
+    );
+    const delayedInvestments = useMemo(
+        () => response.data.delayed || null,
+        [response]
+    );
+    const incomeInvestments = useMemo(
+        () => response.data.income || null,
+        [response]
+    );
+    const statements: statementI[] = useMemo(
+        () => response.data.statements || [],
+        [response]
+    );
+    const firstStatement: statementI | null = useMemo(
+        () => (statements.length > 0 ? statements[0] : null),
+        [statements]
+    );
+    const secondStatement: statementI | null = useMemo(
+        () => (statements.length > 0 ? statements[1] : null),
+        [statements]
+    );
 
     //? Use state
     const [dateInput, setDateInput] = useState(getCurrentMonth());
+    const [chartData, setChartData] = useState<
+        { wpływy: number; przewidywane: number }[]
+    >([]);
 
     //? Use effect
     useSession();
+    const { userPermission, token } = useUser();
+    useEffect(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const chartURL: RequestInfo = `${config.host}/users/chart/${year}/${month}`;
+        fetchData(chartURL, { token })
+            .then(({ response }) => {
+                if (response.data) {
+                    console.log("response :>> ", response.data);
+                    const chart = [];
+                    for (const data of response.data.chartData) {
+                        chart.push({
+                            name: lang.months[data.month],
+                            wpływy: data.paidValue,
+                            przewidywane: data.initialValue,
+                        });
+                    }
+                    setChartData(chart);
+                }
+            })
+            .catch((err) => console.log("err :>> ", err));
+    }, [token]);
 
     //? Methods
-    const handleDateInputChange = (e: FormEvent<HTMLInputElement>) => {
-        console.log("e.value :>> ", e.currentTarget.value);
-        setDateInput(e.currentTarget.value);
+    const handleDateInputChange = useCallback(
+        async (e: FormEvent<HTMLInputElement>) => {
+            console.log("e.value :>> ", e.currentTarget.value);
+            setDateInput(e.currentTarget.value);
+            const year = e.currentTarget.value.split("-")[0];
+            const month = e.currentTarget.value.split("-")[1];
+            console.log("year :>> ", year);
+            console.log("month :>> ", month);
+            const chartURL: RequestInfo = `${config.host}/users/chart/${year}/${month}`;
+            const { response } = await fetchData(chartURL, { token });
+            console.log("response :>> ", response.data);
+            const chart = [];
+            for (const data of response.data.chartData) {
+                chart.push({
+                    name: lang.months[data.month],
+                    wpływy: data.paidValue,
+                    przewidywane: data.initialValue,
+                });
+            }
+            setChartData(chart);
+            //! Dodać wysyłanie do bazy danych o zmianę danych
+        },
+        [token]
+    );
 
-        //! Dodać wysyłanie do bazy danych o zmianę danych
-    };
+    const handleSendStatementFile = useCallback(
+        async (e: FormEvent<HTMLInputElement>) => {
+            e.preventDefault();
+            const url: RequestInfo = `${config.host}/users/excel`;
+            const data = new FormData();
+            if (e.currentTarget.files)
+                data.append("file", e.currentTarget.files[0]);
+            const { response } = await fetchData(url, {
+                token,
+                data,
+                method: MethodE.POST,
+            });
+            console.log("response :>> ", response);
+            if (response.status === 404) {
+                alert("Plik nie został poprawnie wybrany");
+            } else if (response.status === 200) {
+                alert("Pomyślnie przesłano plik");
+                router.push("/dashboard");
+            }
+        },
+        [router, token]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -91,18 +196,23 @@ const Dashboard: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -170,7 +280,11 @@ const Dashboard: NextPage = () => {
                                 <div className={styles.textContainer}>
                                     <h3>Aktywne</h3>
                                     <p>
-                                        <span>240</span>
+                                        <span>
+                                            {activeInvestments
+                                                ? activeInvestments.value
+                                                : 0}
+                                        </span>
                                         <span>PLN</span>
                                     </p>
                                 </div>
@@ -189,7 +303,11 @@ const Dashboard: NextPage = () => {
                                 <div className={styles.textContainer}>
                                     <h3>Opóźnione</h3>
                                     <p>
-                                        <span>1000</span>
+                                        <span>
+                                            {delayedInvestments
+                                                ? delayedInvestments.value
+                                                : 0}
+                                        </span>
                                         <span>PLN</span>
                                     </p>
                                 </div>
@@ -211,7 +329,35 @@ const Dashboard: NextPage = () => {
                         />
                         <div className={styles.chartWrapper}>
                             <h2>Wykres wielkości portfela</h2>
-                            <div className={styles.chart}>chart</div>
+                            <div className={styles.chart}>
+                                {" "}
+                                <LineChart
+                                    width={330}
+                                    height={200}
+                                    data={chartData}
+                                    // margin={{ top: 10, bottom: 10, left: 20, right: 20 }}
+                                >
+                                    <Line
+                                        type="monotone"
+                                        dataKey="przewidywane"
+                                        stroke="#4F4282"
+                                        strokeWidth={3}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="wpływy"
+                                        stroke="#1b8301"
+                                        strokeWidth={3}
+                                    />
+                                    <CartesianGrid
+                                        stroke="#ccc"
+                                        strokeDasharray="5 5"
+                                    />
+                                    <XAxis dataKey="name" />
+                                    {/* <YAxis /> */}
+                                    <Tooltip />
+                                </LineChart>
+                            </div>
                             <div className={styles.chartStats}>
                                 <div className={styles.chartActiveInvestment}>
                                     <div className={styles.imageWrapper}>
@@ -223,7 +369,11 @@ const Dashboard: NextPage = () => {
                                     </div>
                                     <h3>Aktywnych</h3>
                                     <p>
-                                        <span>200</span>
+                                        <span>
+                                            {activeInvestments
+                                                ? activeInvestments.length
+                                                : 0}
+                                        </span>
                                         <span>inwestycji</span>
                                     </p>
                                 </div>
@@ -237,7 +387,11 @@ const Dashboard: NextPage = () => {
                                     </div>
                                     <h3>Zakończonych</h3>
                                     <p>
-                                        <span>12</span>
+                                        <span>
+                                            {finishedInvestments
+                                                ? finishedInvestments.length
+                                                : 0}
+                                        </span>
                                         <span>inwestycji</span>
                                     </p>
                                 </div>
@@ -254,13 +408,16 @@ const Dashboard: NextPage = () => {
                             <div className={styles.expectedInvestmentContainer}>
                                 <h3>
                                     <span>Spodziewane</span>
-                                    <span>1200</span>
+                                    <span>
+                                        {incomeInvestments
+                                            ? incomeInvestments.value
+                                            : 0}
+                                    </span>
                                     <span>PLN</span>
                                 </h3>
                                 <p>
                                     Łączna wartość inwestycji, które mają
-                                    wpłynąć w tym miesiącu łącznie z
-                                    niezapłaconymi ratami z poprzednich miesięcy
+                                    wpłynąć w tym miesiącu
                                 </p>
                             </div>
                         </div>
@@ -285,23 +442,35 @@ const Dashboard: NextPage = () => {
                     </div>
                     <div className={styles.accountStatementsWrapper}>
                         <h3>Wyciągi z konta</h3>
-                        <AccountStatements
-                            id="52164266224976524 46851"
-                            name="Jonatan"
-                            surname="XYZ"
-                            date="25.06.2022r."
-                            isNew={true}
-                        />
-                        <AccountStatements
-                            id="52164266224976524 46851"
-                            name="Jonatan"
-                            surname="XYZ"
-                            date="12.01.2022r."
-                            isNew={false}
-                        />
-                        <button className={styles.statementButton}>
-                            Prześlij wyciąg
-                        </button>
+                        {firstStatement ? (
+                            <AccountStatements
+                                id={firstStatement.id}
+                                name={firstStatement.name}
+                                date={firstStatement.createdAt}
+                                isNew={true}
+                            />
+                        ) : null}
+                        {secondStatement ? (
+                            <AccountStatements
+                                id={secondStatement.id}
+                                name={secondStatement.name}
+                                date={secondStatement.createdAt}
+                                isNew={false}
+                            />
+                        ) : null}
+
+                        <label
+                            htmlFor="statement"
+                            className={styles.statementButton}
+                        >
+                            <span>Prześlij wyciąg</span>
+                            <input
+                                type="file"
+                                name="statement"
+                                id="statement"
+                                onChange={handleSendStatementFile}
+                            />
+                        </label>
                         <button
                             className={styles.statementButton}
                             onClick={() => router.push("/dashboard/operation")}
@@ -314,14 +483,20 @@ const Dashboard: NextPage = () => {
                         <p>Wartość wszystkich inwestycji historycznie</p>
                         <div className={styles.allInvestmentsContainer}>
                             <h4>
-                                <span>25000</span>
+                                <span>
+                                    {allInvestments ? allInvestments.value : 0}
+                                </span>
                                 <span>PLN</span>
                             </h4>
                             <p>Wszystkie inwestycje</p>
                         </div>
                         <div className={styles.allInvestmentsContainer}>
                             <h4>
-                                <span>7000</span>
+                                <span>
+                                    {allInvestments
+                                        ? allInvestments.commission
+                                        : 0}
+                                </span>
                                 <span>PLN</span>
                             </h4>
                             <p>Twoja łączna prowizja</p>
@@ -339,11 +514,11 @@ const Dashboard: NextPage = () => {
 const AccountStatements: NextPage<{
     id: string;
     name: string;
-    surname: string;
-    date: string;
+    date: Date;
     isNew: boolean;
-}> = ({ id, name, surname, date, isNew }) => {
+}> = ({ id, name, date, isNew }) => {
     const [isActive, setIsActive] = useState(false);
+    const dateInput = new Date(date);
     return (
         <div className={styles.accountStatements}>
             <div className={styles.imageWrapper}>
@@ -356,8 +531,7 @@ const AccountStatements: NextPage<{
             <div className={styles.statementContent}>
                 <h4>
                     <span>{name}</span>
-                    <span>{surname}</span>
-                    <span>{date}</span>
+                    <span>{getDate(dateInput)}</span>
                 </h4>
                 <p>{id}</p>
             </div>
@@ -385,6 +559,47 @@ const AccountStatements: NextPage<{
             </div>
         </div>
     );
+};
+
+export const getServerSideProps: GetServerSideProps<{
+    response: responseI;
+}> = async (context) => {
+    const token = context.req.cookies.token;
+    const response: responseI = { message: "OK", status: 200, data: {} };
+    const urlActiveInvestments: RequestInfo = `${config.host}/users/investments/active`;
+    const activeInvestments = await fetchData(urlActiveInvestments, { token });
+    const urlAllInvestments: RequestInfo = `${config.host}/users/investments/all`;
+    const allInvestments = await fetchData(urlAllInvestments, { token });
+    const urlFinishedInvestments: RequestInfo = `${config.host}/users/investments/finished`;
+    const finishedInvestments = await fetchData(urlFinishedInvestments, {
+        token,
+    });
+    const urlDelayedInvestments: RequestInfo = `${config.host}/users/investments/delayed`;
+    const delayedInvestments = await fetchData(urlDelayedInvestments, {
+        token,
+    });
+    const urlIncomeInvestments: RequestInfo = `${config.host}/users/investments/income`;
+    const incomeInvestments = await fetchData(urlIncomeInvestments, {
+        token,
+    });
+
+    const urlStatements: RequestInfo = `${config.host}/users/statements`;
+    const statementsResponse = await fetchData(urlStatements, {
+        token,
+    });
+    if (allInvestments.response.data)
+        response.data.all = allInvestments.response.data;
+    if (activeInvestments.response.data)
+        response.data.active = activeInvestments.response.data;
+    if (finishedInvestments.response.data)
+        response.data.finished = finishedInvestments.response.data;
+    if (delayedInvestments.response.data)
+        response.data.delayed = delayedInvestments.response.data;
+    if (incomeInvestments.response.data)
+        response.data.income = incomeInvestments.response.data;
+    if (statementsResponse.response.data)
+        response.data.statements = statementsResponse.response.data;
+    return { props: { response } };
 };
 
 export default Dashboard;

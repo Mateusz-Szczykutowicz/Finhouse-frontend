@@ -2,50 +2,48 @@ import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import PermissionGate from "../components/PermissionGate";
+import { responseI } from "../interfaces/general.interface";
+import { messagesI } from "../interfaces/messages.interface";
 import { PermissionE } from "../interfaces/permission.interface";
 
 import styles from "../styles/messages.module.scss";
+import config from "../utils/config";
 import useSession from "../utils/lib/useSession";
 import useUser from "../utils/lib/useUser";
+import { fetchData, MethodE } from "../utils/scripts/fetchData.script";
 
-const Messages: NextPage = () => {
+const Messages: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
     const { userPermission } = useUser();
+    const messages: messagesI[] = useMemo(
+        () => response.data || [],
+        [response]
+    );
 
     //? Use state
-    const [investment, setInvestment] = useState("");
+    const [investment, setInvestment] = useState("*All*");
 
     //? Use effect
     useSession();
 
     //? Methods
-    const handleChange = (e: FormEvent<HTMLSelectElement>) => {
+    const handleChange = useCallback((e: FormEvent<HTMLSelectElement>) => {
         console.log("Value :>> ", e.currentTarget.value);
         setInvestment(e.currentTarget.value);
-    };
+    }, []);
 
-    // const messageList = messages.map(({ id, content, title, subtitle }) => (
-    //     <Message
-    //         key={id}
-    //         id={id}
-    //         title={title}
-    //         subtitle={subtitle}
-    //         message={content}
-    //     />
-    // ));
-    // const investemntList = investments.map(({ name, id }) => (
-    //     <option value={id} key={id}>
-    //         {name}
-    //     </option>
-    // ));
-    const messageList = null;
-
-    const investemntList = null;
+    const messageList = useMemo(
+        () =>
+            messages.map((message) => (
+                <Message key={message.id} message={message} />
+            )),
+        [messages]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -103,18 +101,23 @@ const Messages: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -160,13 +163,12 @@ const Messages: NextPage = () => {
                             value={investment}
                             onChange={handleChange}
                         >
-                            <option disabled>
+                            <option disabled value={"none"}>
                                 Segreguj wiadomości wg. inwestycji
                             </option>
                             <option selected value="*All*">
                                 Wszystkie wiadomości
                             </option>
-                            {investemntList}
                         </select>
                     </label>
                     {messageList}
@@ -177,33 +179,59 @@ const Messages: NextPage = () => {
     );
 };
 
-const Message: NextPage<{
-    id: number;
-    title: string;
-    subtitle: string;
-    message: string;
-}> = ({ id, title, subtitle, message }) => {
+const Message: NextPage<{ message: messagesI }> = ({ message }) => {
     const router = useRouter();
-
+    const { author, content, id, subtitle, title, isNewStatus } = message;
+    const { userPermission } = useUser();
     return (
         <div
             className={styles.message}
             key={id.toString()}
             onClick={() => router.push(`/messages/id/${id}`)}
         >
-            <h3>{title}</h3>
+            <div className={styles.titleWrapper}>
+                <h3>{title}</h3>
+                {isNewStatus ? (
+                    <div className={styles.newMessage}>
+                        {userPermission === PermissionE.ADMIN
+                            ? "Nie odczytano"
+                            : "Nowa"}
+                    </div>
+                ) : null}
+            </div>
+
+            <h3 className={styles.author}>
+                <span>Autor:</span>
+                <span>{author}</span>
+            </h3>
             <h4>{subtitle}</h4>
-            <p>{message}</p>
+            <p>{content}</p>
         </div>
     );
 };
 
-// export const getServerSideProps: GetServerSideProps<{
-//     messages: messagesI[];
-//     investments: investmentsI[];
-// }> = async (context) => {
-//     console.log("Cookies :>> ", context.req.cookies);
-//     const { token } = context.req.cookies;
-// };
+export const getServerSideProps: GetServerSideProps<{
+    response: responseI;
+}> = async (context) => {
+    const { token } = context.req.cookies;
+    const urlAdminMessages: RequestInfo = `${config.host}/admin/messages`;
+    const urlUserMessages: RequestInfo = `${config.host}/users/messages`;
+    const adminResponse = await fetchData(urlAdminMessages, {
+        token,
+        method: MethodE.GET,
+    });
+    const { response } = await fetchData(urlUserMessages, {
+        token,
+        method: MethodE.GET,
+    });
+    if (!response.data) {
+        return { props: { response: adminResponse.response } };
+    }
+    if (response.data.length > 0) {
+        return { props: { response } };
+    } else {
+        return { props: { response: adminResponse.response } };
+    }
+};
 
 export default Messages;

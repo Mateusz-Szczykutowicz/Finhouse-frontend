@@ -2,64 +2,144 @@ import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
+import Modal from "../../../components/Modal";
+import PermissionGate from "../../../components/PermissionGate";
+import { responseI } from "../../../interfaces/general.interface";
 import {
     installmentResponseI,
     InstallmentStatusE,
 } from "../../../interfaces/installment.interface";
 import { investmentResponseI } from "../../../interfaces/investments.interface";
-import { investorI } from "../../../interfaces/investor.interface";
-
+import { PermissionE } from "../../../interfaces/permission.interface";
 import styles from "../../../styles/investments.id.module.scss";
+import config from "../../../utils/config";
 import useSession from "../../../utils/lib/useSession";
-import { fetchData } from "../../../utils/scripts/fetchData.script";
+import useUser from "../../../utils/lib/useUser";
+import { fetchData, MethodE } from "../../../utils/scripts/fetchData.script";
 import {
     getDate,
     getDayDifference,
 } from "../../../utils/scripts/getDate.scripr";
 
-const Investments: NextPage<{
-    investment: investmentResponseI;
-    installments: installmentResponseI[];
-}> = ({ investment, installments }) => {
+const Investments: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
+    const investment: investmentResponseI = useMemo(
+        () => response.data.investment,
+        [response]
+    );
+    const installments: installmentResponseI[] = useMemo(
+        () => response.data.installments || [],
+        [response]
+    );
+    const value: number = useMemo(() => response.data.value, [response]);
+    const delay: number = useMemo(() => response.data.delay, [response]);
+    const investmentPlaceholder: investmentResponseI = useMemo(() => {
+        return {
+            commissionAmount: 0,
+            contract: "",
+            email: "",
+            firstInstallment: new Date(),
+            gracePeriod: 0,
+            id: "",
+            installmentAmount: 0,
+            investorCapital: 0,
+            investorId: "",
+            lastInstallment: new Date(),
+            name: "",
+            numberOfInstallment: 0,
+            tel: "",
+        };
+    }, []);
     const {
         id,
-        name,
         firstInstallment,
         lastInstallment,
         investorCapital,
         installmentAmount,
         commissionAmount,
         numberOfInstallment,
-        email,
-        tel,
         contract,
         gracePeriod,
         investorId,
-    } = investment;
-
+    } = useMemo(
+        () => investment || investmentPlaceholder,
+        [investment, investmentPlaceholder]
+    );
     const router = useRouter();
-    const startDate = new Date(firstInstallment);
-    const endDate = new Date(lastInstallment);
-    const smsSentDate = new Date();
-    const emailSentDate = new Date();
+    const startDate = useMemo(
+        () => new Date(firstInstallment),
+        [firstInstallment]
+    );
+    const endDate = useMemo(() => new Date(lastInstallment), [lastInstallment]);
+    const smsSentDate = useMemo(() => new Date(), []);
+    const emailSentDate = useMemo(() => new Date(), []);
 
     //? Use state
+    const [showModal, setShowModal] = useState(false);
 
     //? Use effects
     useSession();
+    const { token, userPermission } = useUser();
+    const [name, setName] = useState(investment ? investment.name : "");
+    const [email, setEmail] = useState(investment ? investment.email : "");
+    const [tel, setTel] = useState(investment ? investment.tel : "");
 
     //? Methods
-    const installmentsList = installments.map((installment, index) => (
-        <InstallmentElement
-            installment={installment}
-            key={installment.id}
-            index={index}
-        />
-    ));
+    const installmentsList = useMemo(
+        () =>
+            installments.map((installment, index) => (
+                <InstallmentElement
+                    installment={installment}
+                    key={installment.id}
+                    index={index}
+                />
+            )),
+        [installments]
+    );
+    const files = useMemo(() => contract.split(", "), [contract]);
+    const fileList = useMemo(
+        () =>
+            files.map((fileName) => (
+                <FileElement
+                    key={fileName}
+                    id={id}
+                    token={token}
+                    fileName={fileName}
+                />
+            )),
+        [files, id, token]
+    );
+
+    const handleEditInvestment = useCallback(
+        async (e: FormEvent<HTMLElement>) => {
+            e.preventDefault();
+            const data = {
+                name: name === "" ? investment.name : name,
+                email: email === "" ? investment.email : email,
+                tel: tel === "" ? investment.tel : tel,
+                id,
+            };
+            const editInvestmentURL: RequestInfo = `${config.host}/investments`;
+            const { response } = await fetchData(editInvestmentURL, {
+                token,
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                method: MethodE.PUT,
+            });
+            console.log("response :>> ", response);
+            if (response.status === 200) {
+                alert("Pomyślnie zaktualizowano");
+                setShowModal(false);
+                router.push(`/investments/id/${id}`);
+            } else {
+                alert("Coś poszło nie tak");
+            }
+        },
+        [email, id, name, tel, investment, token, router]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -67,6 +147,7 @@ const Investments: NextPage<{
                 <title>Inwestycje | FinHouse</title>
             </Head>
             <Header />
+
             <main className={styles.container}>
                 <div className={styles.nav}>
                     <button
@@ -117,18 +198,23 @@ const Investments: NextPage<{
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={`${styles.category} ${styles.active}`}
                         onClick={() => router.push("/investments")}
@@ -154,9 +240,79 @@ const Investments: NextPage<{
                 <div className={styles.investmentsWrapper}>
                     <h2>Inwestycja</h2>
                     <div className={styles.investmentsContainer}>
+                        <button
+                            className={styles.showModal}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowModal(true);
+                            }}
+                        >
+                            <Image
+                                src="/images/editInvestor.svg"
+                                layout="fill"
+                                alt="Edytuj"
+                            />
+                        </button>
+                        <Modal
+                            title="Edytuj Inwestycje"
+                            onClose={() => setShowModal(false)}
+                            show={showModal}
+                            // key={`modal-${id}`}
+                        >
+                            <form
+                                action="#"
+                                method="post"
+                                onSubmit={handleEditInvestment}
+                            >
+                                <input
+                                    type="text"
+                                    name="name"
+                                    id="name"
+                                    placeholder={
+                                        investment ? investment.name : ""
+                                    }
+                                    className={styles.investorDataField}
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    id="email"
+                                    placeholder={
+                                        investment ? investment.email : ""
+                                    }
+                                    className={styles.investorDataField}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+
+                                <input
+                                    type="tel"
+                                    name="tel"
+                                    id="tel"
+                                    placeholder={
+                                        investment ? investment.tel : ""
+                                    }
+                                    className={styles.investorDataField}
+                                    value={tel}
+                                    onChange={(e) => setTel(e.target.value)}
+                                />
+                                <button
+                                    type="submit"
+                                    className={styles.confirmButton}
+                                >
+                                    <Image
+                                        src="/images/check.svg"
+                                        layout="fill"
+                                        alt="Zatwierdź"
+                                    />
+                                </button>
+                            </form>
+                        </Modal>
                         <div className={styles.headerContainer}>
                             <div className={styles.leftWrapper}>
-                                <h3>{name}</h3>
+                                <h3>{investment.name}</h3>
                                 <div className={styles.date}>
                                     <span>Pożyczka od</span>
                                     <span>{getDate(startDate)}</span>
@@ -168,17 +324,21 @@ const Investments: NextPage<{
                                         Łączne opóźnienie w całej pożyczce w
                                         dniach:
                                     </span>
-                                    <span>{50}</span>
+                                    <span>{delay}</span>
                                 </div>
                             </div>
                             <div className={styles.rightWrapper}>
                                 <div className={styles.email}>
                                     <span>E-mail:</span>
-                                    <a href={`mailto:${email}`}>{email}</a>
+                                    <a href={`mailto:${email}`}>
+                                        {investment.email}
+                                    </a>
                                 </div>
                                 <div className={styles.tel}>
                                     <span>Nr. tel</span>
-                                    <a href={`tel:+48${tel}`}>{tel}</a>
+                                    <a href={`tel:+48${tel}`}>
+                                        {investment.tel}
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -193,12 +353,16 @@ const Investments: NextPage<{
                                     <span>{numberOfInstallment}</span>
                                 </div>
                                 <div className={styles.gracePeriod}>
-                                    <span>Karencja</span>
+                                    <span>Karencja:</span>
                                     <span>
                                         {gracePeriod > 0 ? "TAK" : "NIE"}
                                     </span>
-                                    <span>{gracePeriod}</span>
-                                    <span>msc.</span>
+                                    <span>
+                                        {gracePeriod > 0 ? gracePeriod : null}
+                                    </span>
+                                    <span>
+                                        {gracePeriod > 0 ? "msc." : null}
+                                    </span>
                                 </div>
                                 <div className={styles.smsSentWrapper}>
                                     <span>Ostatnio wysłany SMS:</span>
@@ -222,36 +386,27 @@ const Investments: NextPage<{
                                 </p>
                                 <p>
                                     <span>Łącznie prowizje miesięcznie</span>
-                                    <span>{commissionAmount}</span>
+                                    <span>
+                                        {(
+                                            commissionAmount /
+                                            numberOfInstallment
+                                        ).toFixed(2)}
+                                    </span>
                                     <span>PLN</span>
                                 </p>
                                 <p>
                                     <span>
                                         Łącznie zaległe raty lub niedopłata
                                     </span>
-                                    <span>{509}</span>
+                                    <span>{value}</span>
                                     <span>PLN</span>
                                 </p>
                             </div>
                         </div>
                         <div className={styles.documentsWrapper}>
-                            <p>Dokument do pobrania</p>
-                            <div className={styles.fileWrapper}>
-                                <div className={styles.imageWrapper}>
-                                    <Image
-                                        src="/images/file.svg"
-                                        layout="fill"
-                                        alt="File"
-                                    />
-                                </div>
-                                <p>{"Nazwa pliku"}</p>
-                                <button className={styles.imageWrapper}>
-                                    <Image
-                                        src="/images/download-file.svg"
-                                        layout="fill"
-                                        alt="File"
-                                    />
-                                </button>
+                            <p>Dokumenty do pobrania</p>
+                            <div className={styles.filesWrapper}>
+                                {fileList}
                             </div>
                         </div>
                         <div className={styles.installmentWrapper}>
@@ -273,16 +428,53 @@ const Investments: NextPage<{
     );
 };
 
+const FileElement: NextPage<{
+    id: string;
+    fileName: string;
+    token: string;
+}> = ({ token, fileName, id }) => {
+    const router = useRouter();
+    const handleFileDownload = async () => {
+        router.push(`${config.host}/investments/id/${id}/contract/${fileName}`);
+    };
+    return (
+        <div className={styles.fileWrapper}>
+            <div className={styles.imageWrapper}>
+                <Image src="/images/file.svg" layout="fill" alt="File" />
+            </div>
+            <div className={styles.fileNameWrapper}>
+                <span>{fileName}</span>
+                <div className={styles.tooltip}>{fileName}</div>
+            </div>
+            <button
+                className={styles.imageWrapper}
+                onClick={handleFileDownload}
+            >
+                <Image
+                    src="/images/download-file.svg"
+                    layout="fill"
+                    alt="File"
+                />
+            </button>
+        </div>
+    );
+};
+
 const InstallmentElement: NextPage<{
     installment: installmentResponseI;
     index: number;
 }> = ({ installment, index }) => {
-    const { endDate, id, initialAmount, paidAmount, startDate, paymentDelay } =
-        installment;
-    const installmentDate = new Date(endDate);
-    const now = new Date();
-    const dayDiff = getDayDifference(now, installmentDate);
-    let installmentStatus = InstallmentStatusE.TOPAY;
+    const { initialAmount, paidAmount, startDate } = useMemo(
+        () => installment,
+        [installment]
+    );
+    const installmentDate = useMemo(() => new Date(startDate), [startDate]);
+    const now = useMemo(() => new Date(), []);
+    const dayDiff = useMemo(
+        () => getDayDifference(now, installmentDate),
+        [now, installmentDate]
+    );
+    let installmentStatus = useMemo(() => InstallmentStatusE.TOPAY, []);
     console.log("REST :>> ", initialAmount - paidAmount);
     if (initialAmount - paidAmount > 0) {
         if (dayDiff > 0) {
@@ -339,26 +531,35 @@ const InstallmentElement: NextPage<{
 };
 
 export const getServerSideProps: GetServerSideProps<{
-    investment: investmentResponseI;
+    response: responseI;
 }> = async (context) => {
     const token = context.req.cookies.token;
     const { id } = context.params || { id: "" };
 
-    const investmentURL = new URL(
-        `http://localhost:8000/investments/id/${id}/`
-    );
-    const installmentURL = new URL(
-        `http://localhost:8000/investments/id/${id}/installments`
-    );
+    const investmentURL: RequestInfo = `${config.host}/investments/id/${id}/`;
+    const installmentURL: RequestInfo = `${config.host}/investments/id/${id}/installments`;
+    const delayURL: RequestInfo = `${config.host}/investments/${id}/delay`;
     const investmentResult = await fetchData(investmentURL, { token });
     const installmentsResult = await fetchData(installmentURL, { token });
-    const response = await investmentResult.response;
-    const response2 = await installmentsResult.response;
-    const investment: investmentResponseI = response.data;
-    const installments: installmentResponseI[] = response2.data;
-    console.log("investment :>> ", investment);
-    console.log("installments :>> ", installments);
-    return { props: { investment, installments } };
+    const delayResult = await fetchData(delayURL, { token });
+    const investment: investmentResponseI = investmentResult.response.data
+        ? investmentResult.response.data
+        : null;
+    const installments: installmentResponseI[] = investmentResult.response.data
+        ? installmentsResult.response.data.installments
+        : [];
+    const value: number = installmentsResult.response.data
+        ? installmentsResult.response.data.value
+        : 0;
+    const delay: number = delayResult.response.data
+        ? delayResult.response.data
+        : 0;
+    const response = {
+        status: 200,
+        message: "OK",
+        data: { installments, investment, value, delay },
+    };
+    return { props: { response } };
 };
 
 export default Investments;

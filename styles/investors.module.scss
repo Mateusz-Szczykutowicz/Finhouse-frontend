@@ -95,6 +95,7 @@
                 margin-top: 50px;
                 width: 100%;
                 .investorElementWrapper {
+                    position: relative;
                     display: flex;
                     justify-content: space-between;
                     background-color: #fff;
@@ -104,6 +105,36 @@
                     padding: 20px 32px;
                     margin-top: 20px;
                     cursor: pointer;
+                    .editInvestor {
+                        position: absolute;
+                        top: 23px;
+                        right: 50px;
+                        width: 24px;
+                        height: 24px;
+                        background-color: transparent;
+                        border: none;
+                        cursor: pointer;
+                    }
+                    h4 {
+                        margin-top: 12px;
+                    }
+                    form {
+                        .investorDataField {
+                            display: block;
+                            margin-top: 6px;
+                            padding: 3px 6px;
+                        }
+                        .confirmButton {
+                            position: absolute;
+                            top: 23px;
+                            right: 50px;
+                            width: 24px;
+                            height: 24px;
+                            background-color: transparent;
+                            border: none;
+                            cursor: pointer;
+                        }
+                    }
                     .leftWrapper {
                         h3 {
                             font-size: 20px;
@@ -127,6 +158,16 @@
                                 margin-right: 5px;
                             }
                         }
+                    }
+                    .showModal {
+                        background-color: transparent;
+                        border: none;
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        cursor: pointer;
+                        width: 24px;
+                        height: 24px;
                     }
                 }
                 .investorElementWrapper:hover {

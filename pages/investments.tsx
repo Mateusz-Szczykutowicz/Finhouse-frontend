@@ -2,38 +2,214 @@ import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent } from "react";
+import {
+    ButtonHTMLAttributes,
+    MouseEventHandler,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { responseI } from "../interfaces/general.interface";
+import PermissionGate from "../components/PermissionGate";
+import { responseI, sortFilterE } from "../interfaces/general.interface";
 import { investmentResponseI } from "../interfaces/investments.interface";
+import { PermissionE } from "../interfaces/permission.interface";
 
 import styles from "../styles/investments.module.scss";
+import config from "../utils/config";
 import useSession from "../utils/lib/useSession";
-import { fetchData } from "../utils/scripts/fetchData.script";
+import useUser from "../utils/lib/useUser";
+import { fetchData, MethodE } from "../utils/scripts/fetchData.script";
 import { getDate } from "../utils/scripts/getDate.scripr";
 
 //? Function
-const getList = (list: investmentResponseI[]) => {
-    return list.map((investment) => (
-        <InvestmentElement investment={investment} key={investment.id} />
-    ));
-};
+// const getList = (list: investmentResponseI[]) => {
+//     return list.map((investment) => (
+//         <InvestmentElement investment={investment} key={investment.id} />
+//     ));
+// };
 
 const Investments: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
-    const investments: investmentResponseI[] = response.data || [];
+    const investments: investmentResponseI[] = useMemo(
+        () => response.data || [],
+        [response]
+    );
 
     //? Use state
+    const [sortFilter, setSortFilter] = useState("nameUp");
+    const [investmentList, setInvestmentList] = useState([<></>]);
+    const [, setRefresh] = useState(0);
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
+
+    useEffect(() => {
+        if (sortFilter === sortFilterE.NAME_UP) {
+            console.log("Wykonuję sortowanie od A do Z");
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.name.toLowerCase() >
+                    investmentElement2.name.toLowerCase()
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.NAME_DOWN) {
+            console.log("Wykonuję sortowanie od Z do A");
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.name.toLowerCase() <
+                    investmentElement2.name.toLowerCase()
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.AMOUNT_DOWN) {
+            console.log(
+                "Wykonuję sortowanie od największej kwoty zainwestowanej"
+            );
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.investorCapital <
+                    investmentElement2.investorCapital
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.AMOUNT_UP) {
+            console.log(
+                "Wykonuję sortowanie od najmniejszej kwoty zainwestowanej"
+            );
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.investorCapital >
+                    investmentElement2.investorCapital
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.COMMISSION_DOWN) {
+            console.log(
+                "Wykonuję sortowanie od największej prowizji miesięcznej"
+            );
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.commissionAmount /
+                        investmentElement.numberOfInstallment <
+                    investmentElement2.commissionAmount /
+                        investmentElement2.numberOfInstallment
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.COMMISSION_UP) {
+            console.log(
+                "Wykonuję sortowanie od najmniejszej prowizji miesięcznej"
+            );
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.commissionAmount /
+                        investmentElement.numberOfInstallment >
+                    investmentElement2.commissionAmount /
+                        investmentElement2.numberOfInstallment
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.INSTALLMENT_DOWN) {
+            console.log("Wykonuję sortowanie od największej raty miesięcznej");
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.installmentAmount <
+                    investmentElement2.installmentAmount
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        } else if (sortFilter === sortFilterE.INSTALLMENT_UP) {
+            console.log("Wykonuję sortowanie od najmniejszej raty miesięcznej");
+            const investmentList = investments
+                .sort((investmentElement, investmentElement2) =>
+                    investmentElement.installmentAmount >
+                    investmentElement2.installmentAmount
+                        ? 1
+                        : -1
+                )
+                .map((investment) => (
+                    <InvestmentElement
+                        investment={investment}
+                        key={investment.id}
+                    />
+                ));
+            setInvestmentList(investmentList);
+            setRefresh(Math.random());
+        }
+    }, [sortFilter, investments]);
 
     //? Methods
-    const investorsList = investments.map((investment) => (
-        <InvestmentElement investment={investment} key={investment.id} />
-    ));
+    // const investorsList = useMemo(
+    //     () =>
+    //         investments.map((investment) => (
+    //             <InvestmentElement
+    //                 investment={investment}
+    //                 key={investment.id}
+    //             />
+    //         )),
+    //     [investments]
+    // );
     // const handleSort = (e: FormEvent<HTMLSelectElement>) => {
     //     if (e.currentTarget.value === "nameUp") {
     //         console.log("wykonuję :>> ");
@@ -116,18 +292,23 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={`${styles.category} ${styles.active}`}
                         onClick={() => router.push("/investments")}
@@ -161,18 +342,42 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
                                 name="filters"
                                 id="filters"
                                 className={styles.filters}
+                                onChange={(e) => setSortFilter(e.target.value)}
                                 // onChange={handleSort}
                             >
                                 <option value="" disabled>
                                     Filtry
                                 </option>
-                                <option value="nameUp">Od A do Z</option>
-                                <option value="nameDown">Od Z do A</option>
+                                <option disabled>Filtry</option>
+                                <option value={sortFilterE.NAME_UP}>
+                                    Inwestorzy od A do Z
+                                </option>
+                                <option value={sortFilterE.NAME_DOWN}>
+                                    Inwestorzy od Z do A
+                                </option>
+                                <option value={sortFilterE.AMOUNT_DOWN}>
+                                    Od największej kwoty zainwestowanej
+                                </option>
+                                <option value={sortFilterE.AMOUNT_UP}>
+                                    Od najmniejszej kwoty zainwestowanej
+                                </option>
+                                <option value={sortFilterE.COMMISSION_DOWN}>
+                                    Od największej prowizji miesięcznej
+                                </option>
+                                <option value={sortFilterE.COMMISSION_UP}>
+                                    Od najmniejszej prowizji miesięcznej
+                                </option>
+                                <option value={sortFilterE.INSTALLMENT_DOWN}>
+                                    Od największej raty miesięcznej
+                                </option>
+                                <option value={sortFilterE.INSTALLMENT_UP}>
+                                    Od najmniejszej raty miesięcznej
+                                </option>
                             </select>
                         </label>
                     </div>
                     <div className={styles.investmentsContainer}>
-                        {investorsList}
+                        {investmentList}
                     </div>
                 </div>
             </main>
@@ -184,6 +389,7 @@ const Investments: NextPage<{ response: responseI }> = ({ response }) => {
 const InvestmentElement: NextPage<{ investment: investmentResponseI }> = ({
     investment,
 }) => {
+    const { token } = useUser();
     const {
         id,
         name,
@@ -192,10 +398,27 @@ const InvestmentElement: NextPage<{ investment: investmentResponseI }> = ({
         investorCapital,
         installmentAmount,
         commissionAmount,
+        numberOfInstallment,
     } = investment;
     const router = useRouter();
     const startDate = new Date(firstInstallment);
     const endDate = new Date(lastInstallment);
+
+    const handleDeleteInvestment = async (e: any) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const deleteURL: RequestInfo = `${config.host}/investments/id/${id}`;
+        const { response } = await fetchData(deleteURL, {
+            token,
+            method: MethodE.DELETE,
+        });
+        console.log("response :>> ", response);
+        if (response.status === 200) {
+            alert(`Pomyślnie usunięto inwestycję ${name}`);
+            router.push("/investments");
+        }
+    };
+
     return (
         <div
             className={styles.investmentWrapper}
@@ -207,10 +430,10 @@ const InvestmentElement: NextPage<{ investment: investmentResponseI }> = ({
                     <span>Pożyczka od</span> <span>{getDate(startDate)}</span>{" "}
                     <span>do</span> <span>{getDate(endDate)}</span>
                 </div>
-                <div className={styles.paymentDelay}>
+                {/* <div className={styles.paymentDelay}>
                     <span>Łączne opóźnienie w całej pożyczce w dniach:</span>
                     <span>{50}</span>
-                </div>
+                </div> */}
                 <button className={styles.send}>Wyślij SMS o zalgłości</button>
                 <button className={styles.send}>
                     Wyślij E-mail o zalgłości
@@ -229,15 +452,22 @@ const InvestmentElement: NextPage<{ investment: investmentResponseI }> = ({
                 </p>
                 <p>
                     <span>Łącznie prowizje miesięcznie</span>
-                    <span>{commissionAmount}</span>
-                    <span>PLN</span>
-                </p>
-                <p>
-                    <span>Łącznie zaległe raty lub niedopłata</span>
-                    <span>{509}</span>
+                    <span>
+                        {(commissionAmount / numberOfInstallment).toFixed(2)}
+                    </span>
                     <span>PLN</span>
                 </p>
             </div>
+            <button
+                className={styles.deleteInvestment}
+                onClick={handleDeleteInvestment}
+            >
+                <Image
+                    src="/images/deleteInvestments.svg"
+                    layout="fill"
+                    alt="Kosz"
+                />
+            </button>
         </div>
     );
 };
@@ -246,7 +476,7 @@ export const getServerSideProps: GetServerSideProps<{
     response: responseI;
 }> = async (context) => {
     const token = context.req.cookies.token;
-    const url = new URL("http://localhost:8000/investments/");
+    const url: RequestInfo = `${config.host}/investments/`;
     const { response } = await fetchData(url, { token });
     return { props: { response } };
 };

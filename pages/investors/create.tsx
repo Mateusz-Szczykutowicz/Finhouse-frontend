@@ -2,14 +2,17 @@ import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import { investorI } from "../../interfaces/investor.interface";
-
+import PermissionGate from "../../components/PermissionGate";
+import { PermissionE } from "../../interfaces/permission.interface";
 import styles from "../../styles/investor.create.module.scss";
+import config from "../../utils/config";
 import useSession from "../../utils/lib/useSession";
+import useUser from "../../utils/lib/useUser";
 import { getCookie } from "../../utils/scripts/cookie.script";
+import { fetchData, MethodE } from "../../utils/scripts/fetchData.script";
 
 const CreateInvestorComponent: NextPage = () => {
     //? Variable
@@ -18,7 +21,7 @@ const CreateInvestorComponent: NextPage = () => {
     //? Use state
     const [isChooseFile, setIsChooseFile] = useState(false);
     let filePlaceholder: any;
-    const [file, setFile] = useState(filePlaceholder);
+    const [files, setFiles] = useState(filePlaceholder);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [tel, setTel] = useState("");
@@ -26,52 +29,60 @@ const CreateInvestorComponent: NextPage = () => {
 
     //? Use effect
     useSession();
+    const { userPermission } = useUser();
 
     //? Methods
-    const handleChangeFileInput = (e: FormEvent<HTMLInputElement>) => {
-        if (e.currentTarget.files && e.currentTarget.value) {
-            setFile(e.currentTarget.files[0]);
-            setIsChooseFile(true);
-        } else {
-            setFile({ name: "Prześlij podpisaną umowę z investorem" });
-            setIsChooseFile(false);
-        }
-    };
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        const token = getCookie("token");
-        console.log("token :>> ", token);
-
-        const data = new FormData();
-        data.append("name", name);
-        data.append("email", email);
-        data.append("tel", tel);
-        data.append("commission", commission);
-        data.append("file", file, "file");
-        const investorResponse = await fetch(
-            "http://localhost:8000/investors",
-            {
-                method: "POST",
-                headers: {
-                    token,
-                },
-                body: data,
+    const handleChangeFileInput = useCallback(
+        (e: FormEvent<HTMLInputElement>) => {
+            console.log("wykonuję file change!!");
+            if (e.currentTarget.files && e.currentTarget.value) {
+                console.log("pliki: !! :>> ", e.currentTarget.files);
+                setFiles(e.currentTarget.files);
+                setIsChooseFile(true);
+            } else {
+                setFiles({ name: "Prześlij podpisaną umowę z investorem" });
+                setIsChooseFile(false);
             }
-        );
-        const response = await investorResponse.json();
-        if (response.status === 201) {
-            setFile({ name: "Prześlij podpisaną umowę z inwestorem" });
-            setName("");
-            setEmail("");
-            setTel("");
-            setCommission("");
-            router.push("/investors");
-        } else if (response.status === 400) {
-            alert("Jedno z pól jest puste!");
-        }
-        console.log("response :>> ", response);
-    };
+        },
+        []
+    );
+
+    const handleSubmit = useCallback(
+        async (e: FormEvent) => {
+            e.preventDefault();
+            const token = getCookie("token");
+            console.log("token :>> ", token);
+            console.log("files :>> ", files);
+
+            const data = new FormData();
+            data.append("name", name);
+            data.append("email", email);
+            data.append("tel", tel);
+            data.append("commission", commission);
+            for (let i = 0; i < files.length; i++) {
+                data.append("files", files[i]);
+            }
+
+            const url: RequestInfo = `${config.host}/investors`;
+            const { response } = await fetchData(url, {
+                token,
+                method: MethodE.POST,
+                data: data,
+            });
+            if (response.status === 201) {
+                setFiles({ name: "Prześlij podpisaną umowę z inwestorem" });
+                setName("");
+                setEmail("");
+                setTel("");
+                setCommission("");
+                router.push("/investors");
+            } else if (response.status === 400) {
+                alert("Jedno z pól jest puste!");
+            }
+            console.log("response :>> ", response);
+        },
+        [commission, email, files, name, router, tel]
+    );
 
     return (
         <div className={styles.wrapper}>
@@ -129,18 +140,23 @@ const CreateInvestorComponent: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -214,13 +230,14 @@ const CreateInvestorComponent: NextPage = () => {
                             <label htmlFor="contract">
                                 <span>
                                     {isChooseFile
-                                        ? file.name
+                                        ? `Wybrane pliki: ${files.length}`
                                         : "Prześlij podpisaną umowę z inwestorem"}
                                 </span>
                                 <input
                                     type="file"
                                     name="contract"
                                     id="contract"
+                                    multiple
                                     placeholder="Prześlij podpisaną umowę z inwestorem"
                                     className={styles.contractInput}
                                     onChange={handleChangeFileInput}

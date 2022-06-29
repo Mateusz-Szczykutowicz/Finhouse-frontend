@@ -1,3 +1,9 @@
+export enum userStatusE {
+    INPROGRESS = "W trakcie",
+    ACCEPTED = "Zaakceptowany",
+    REJECTED = "Odrzucony",
+}
+
 export interface userI {
     email: string;
     password: string;
@@ -16,4 +22,5 @@ export interface userResponseI {
     adress: string;
     admin: boolean;
     createdAt: Date;
+    status: userStatusE;
 }

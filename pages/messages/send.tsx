@@ -1,36 +1,94 @@
-import { NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import { investorResponseI } from "../../interfaces/investor.interface";
-
+import PermissionGate from "../../components/PermissionGate";
+import { responseI } from "../../interfaces/general.interface";
+import { PermissionE } from "../../interfaces/permission.interface";
+import { userResponseI } from "../../interfaces/user.interface";
 import styles from "../../styles/message.send.module.scss";
+import config from "../../utils/config";
 import useSession from "../../utils/lib/useSession";
+import useUser from "../../utils/lib/useUser";
+import { fetchData, MethodE } from "../../utils/scripts/fetchData.script";
 
-const SendMessage: NextPage = () => {
+const SendMessage: NextPage<{ response: responseI }> = ({ response }) => {
     //? Variables
     const router = useRouter();
-
+    const users: userResponseI[] = useMemo(
+        () => response.data || [],
+        [response]
+    );
     //? Use state
     const [title, setTitle] = useState("");
     const [subtitle, setSubtitle] = useState("");
     const [content, setContent] = useState("");
+    const [selectedUsers, setSelectedUsers] = useState<Map<string, string>>(
+        new Map()
+    );
 
     //? Use effect
     useSession();
+    const { token, userPermission } = useUser();
 
     //? Methods
-    const handleSubmit = (e: FormEvent<HTMLElement>) => {
-        e.preventDefault();
-    };
+    const handleSubmit = useCallback(
+        async (e: FormEvent<HTMLElement>) => {
+            e.preventDefault();
+            let sendTo: string[] = [];
+            selectedUsers.forEach((value) => sendTo.push(value));
+            const data = {
+                sendTo: sendTo.join(", "),
+                title,
+                subtitle,
+                content,
+            };
+            console.log("data :>> ", data);
+            const url: RequestInfo = `${config.host}/admin/messages/send`;
+            const { response } = await fetchData(url, {
+                token,
+                method: MethodE.POST,
+                data: JSON.stringify(data),
+                contentType: "application/json",
+            });
+            console.log("response :>> ", response);
+            if (response.status === 201) {
+                router.push("/messages");
+            }
+        },
+        [content, router, selectedUsers, subtitle, title, token]
+    );
 
-    // const investorsList = investors.map((investor) => (
-    //     <Investor key={investor.id} investor={investor} />
-    // ));
-    const investorsList = null; //!! do wymiany
+    const handleSelectUser = useCallback(
+        (id: string, isChecked: boolean) => {
+            if (!isChecked) {
+                console.log("wykonuję teraz select user :>> ");
+                selectedUsers.set(id, id);
+                console.log("selectedUsers :>> ", selectedUsers);
+                setSelectedUsers(selectedUsers);
+            } else {
+                selectedUsers.delete(id);
+                setSelectedUsers(selectedUsers);
+            }
+        },
+        [selectedUsers]
+    );
+
+    const usersList = useMemo(
+        () =>
+            users.map((user) => (
+                <UserElement
+                    key={user.id}
+                    user={user}
+                    handleSelectedUser={handleSelectUser}
+                />
+            )),
+        [users, handleSelectUser]
+    );
+    // const usersList = null; //!! do wymiany
     return (
         <div className={styles.wrapper}>
             <Head>
@@ -87,18 +145,23 @@ const SendMessage: NextPage = () => {
                             />
                         </div>
                     </button>
-                    <button
-                        className={styles.category}
-                        onClick={() => router.push("/users")}
+                    <PermissionGate
+                        permission={PermissionE.ADMIN}
+                        userPermission={userPermission}
                     >
-                        <div className={styles.imageWrapper}>
-                            <Image
-                                src="/images/dashboard/users.svg"
-                                layout="fill"
-                                alt="kategoria"
-                            />
-                        </div>
-                    </button>
+                        <button
+                            className={styles.category}
+                            onClick={() => router.push("/users")}
+                        >
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src="/images/dashboard/users.svg"
+                                    layout="fill"
+                                    alt="kategoria"
+                                />
+                            </div>
+                        </button>
+                    </PermissionGate>
                     <button
                         className={styles.category}
                         onClick={() => router.push("/investments")}
@@ -166,7 +229,7 @@ const SendMessage: NextPage = () => {
                         <button className={styles.checkAll}>
                             Zaznacz wszystkich
                         </button>
-                        {investorsList}
+                        {usersList}
                     </div>
                 </div>
             </main>
@@ -175,16 +238,27 @@ const SendMessage: NextPage = () => {
     );
 };
 
-const Investor: NextPage<{ investor: investorResponseI }> = ({ investor }) => {
-    const { name } = investor;
+const UserElement: NextPage<{
+    user: userResponseI;
+    handleSelectedUser: (id: string, isChecked: boolean) => void;
+}> = ({ user, handleSelectedUser }) => {
+    const { name, id } = user;
+    const [isChecked, setIseChecked] = useState(false);
     return (
-        <div className={styles.investorContainer}>
+        <div
+            className={styles.investorContainer}
+            onClick={() => handleSelectedUser(id, isChecked)}
+        >
             <label>
                 <h3>{name}</h3>
                 <input
                     type="checkbox"
                     name="investorCheckbox"
-                    id={`checkbox${investor.id}`}
+                    id={`checkbox${id}`}
+                    checked={isChecked}
+                    onChange={(e) => {
+                        setIseChecked(e.target.checked);
+                    }}
                     className={styles.investorCheckbox}
                 />
             </label>
@@ -192,16 +266,13 @@ const Investor: NextPage<{ investor: investorResponseI }> = ({ investor }) => {
     );
 };
 
-// export const getServerSideProps: GetServerSideProps<{
-//     investors: investorI[];
-// }> = async (context) => {
-//     const { token } = context.req.cookies;
-//     const investorResult = await fetch(
-//         "http://localhost:3000/data/investors.json"
-//     );
-//     const { investors }: { investors: investorI[] } =
-//         await investorResult.json();
-//     return { props: { investors } };
-// };
+export const getServerSideProps: GetServerSideProps<{
+    response: responseI;
+}> = async (context) => {
+    const { token } = context.req.cookies;
+    const url: RequestInfo = `${config.host}/admin/users`;
+    const { response } = await fetchData(url, { token });
+    return { props: { response } };
+};
 
 export default SendMessage;

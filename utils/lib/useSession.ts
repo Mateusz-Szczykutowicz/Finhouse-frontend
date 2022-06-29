@@ -1,17 +1,24 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import config from "../config";
 import { deleteCookie, getCookie } from "../scripts/cookie.script";
-import { checkToken } from "../scripts/fetchData.script";
+import { fetchData } from "../scripts/fetchData.script";
 
 const useSession = (): void => {
-    console.log("UseSession !!");
     const router = useRouter();
     useEffect(() => {
         const token = getCookie("token");
-        console.log("checktoken!!! :>> ");
-        checkToken(token)
-            .then((response) => {
-                if (!response) {
+        const url: RequestInfo = `${config.host}/users/check`;
+        fetchData(url, { token })
+            .then(({ response }) => {
+                if (response.status === 403) {
+                    alert(
+                        "Twoje konto nie jest jeszcze aktywne lub zostało zablokowane!"
+                    );
+                    deleteCookie("token", { path: "/" });
+                    router.push("/login");
+                }
+                if (response.status !== 200) {
                     deleteCookie("token", { path: "/" });
                     router.push("/login");
                 }

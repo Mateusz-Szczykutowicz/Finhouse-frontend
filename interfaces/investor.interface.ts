@@ -1,9 +1,3 @@
-export enum investorStatusE {
-    INPROGRESS = "W trakcie",
-    ACCEPTED = "Zaakceptowany",
-    REJECTED = "Odrzucony",
-}
-
 export interface investorResponseI {
     id: string;
     name: string;
@@ -11,7 +5,6 @@ export interface investorResponseI {
     tel: string;
     commission: number;
     createdAt: Date;
-    status: investorStatusE;
 }
 
 export interface investorI {

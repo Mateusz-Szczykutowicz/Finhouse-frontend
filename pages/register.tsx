@@ -1,15 +1,14 @@
 import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-
 import styles from "../styles/register.module.scss";
-
 import { userI } from "../interfaces/user.interface";
 import { useRouter } from "next/router";
 import { responseI } from "../interfaces/general.interface";
+import config from "../utils/config";
 
 const Register: NextPage = () => {
     //? Variables
@@ -24,33 +23,36 @@ const Register: NextPage = () => {
     const [investmentAmount, setInvestmentAmount] = useState("");
     const [adress, setAdress] = useState("");
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        const registerData: userI = {
-            adress,
-            email,
-            investmentAmount,
-            name,
-            password,
-            tel,
-        };
-        const registerResult = await fetch(
-            `http://localhost:8000/users/register`,
-            {
-                method: "POST",
-                body: JSON.stringify(registerData),
-                mode: "cors",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+    const handleSubmit = useCallback(
+        async (e: FormEvent) => {
+            e.preventDefault();
+            const registerData: userI = {
+                adress,
+                email: email.toLowerCase(),
+                investmentAmount,
+                name,
+                password,
+                tel,
+            };
+            const registerResult = await fetch(
+                `${config.host}/users/register`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(registerData),
+                    mode: "cors",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+            const response: responseI = await registerResult.json();
+            if (response.status === 201) {
+                router.push("/check");
             }
-        );
-        const response: responseI = await registerResult.json();
-        if (response.status === 201) {
-            router.push("/check");
-        }
-        console.log("response :>> ", response);
-    };
+            console.log("response :>> ", response);
+        },
+        [name, password, router, adress, email, investmentAmount, tel]
+    );
 
     return (
         <div className={styles.wrapper}>

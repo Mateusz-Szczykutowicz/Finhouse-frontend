@@ -2,7 +2,7 @@ import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 
@@ -13,9 +13,9 @@ const Recover: NextPage = () => {
 
     const router = useRouter();
 
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = useCallback((e: FormEvent) => {
         e.preventDefault();
-    };
+    }, []);
 
     return (
         <div className={styles.wrapper}>
